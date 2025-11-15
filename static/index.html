@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <title>OTTCOUTURE OpenCore Analyzer</title>
+    <title>OTTCOUTURE OPENCORE Analyzer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,13 +12,22 @@
     <style>
       :root {
         --bg: #05060f;
-        --panel: rgba(8, 10, 25, 0.85);
-        --card: rgba(16, 19, 39, 0.9);
+        --panel: rgba(8, 10, 25, 0.92);
+        --card: rgba(16, 19, 39, 0.95);
         --accent: #40ffa3;
         --accent-2: #6f7dff;
         --text: #f5f7ff;
         --muted: rgba(255, 255, 255, 0.7);
+        --border: rgba(255, 255, 255, 0.1);
         font-family: "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      body.theme-light {
+        --bg: #f3f5fb;
+        --panel: #ffffff;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #4a5568;
+        --border: rgba(15, 23, 42, 0.1);
       }
       * {
         box-sizing: border-box;
@@ -26,56 +35,62 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: radial-gradient(circle at 20% 20%, #1e1142, transparent 40%),
-          radial-gradient(circle at 80% 0%, #0a5e46, transparent 45%),
-          var(--bg);
+        background: radial-gradient(circle at 20% 20%, rgba(64, 255, 163, 0.08), transparent 40%),
+          radial-gradient(circle at 80% 0%, rgba(111, 125, 255, 0.12), transparent 45%), var(--bg);
         color: var(--text);
         padding: 2.5rem clamp(1.25rem, 3vw, 4rem) 4rem;
         display: flex;
         flex-direction: column;
         gap: 2.5rem;
+        transition: background 0.3s ease;
       }
       header {
         background: linear-gradient(135deg, rgba(24, 25, 61, 0.85), rgba(10, 13, 28, 0.95));
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border);
         border-radius: 32px;
         padding: clamp(1.5rem, 3vw, 3rem);
         backdrop-filter: blur(14px);
         box-shadow: 0 30px 80px rgba(3, 5, 15, 0.9);
       }
+      body.theme-light header {
+        background: linear-gradient(135deg, #ffffff, #f4f6fb);
+        box-shadow: none;
+      }
       header h1 {
         font-size: clamp(2rem, 4vw, 3.5rem);
         margin: 0 0 0.75rem;
-        color: var(--text);
       }
       header p {
         margin: 0 0 0.75rem;
         color: var(--muted);
         line-height: 1.6;
       }
-      header .actions {
+      .top-actions {
         margin-top: 1.5rem;
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
       }
+      .pill-button,
       header .actions a {
         text-decoration: none;
-        padding: 0.85rem 1.25rem;
+        padding: 0.75rem 1.3rem;
         border-radius: 999px;
         font-weight: 600;
-        transition: transform 0.2s ease;
-      }
-      header .actions a.primary {
-        background: linear-gradient(120deg, var(--accent), var(--accent-2));
-        color: #020202;
-      }
-      header .actions a.secondary {
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--border);
         color: var(--text);
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease;
       }
+      .pill-button:hover,
       header .actions a:hover {
         transform: translateY(-2px);
+      }
+      .pill-button.accent {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        color: #030303;
+        border: none;
       }
       main {
         display: grid;
@@ -86,8 +101,11 @@
         background: var(--card);
         padding: 1.75rem;
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border);
         box-shadow: 0 25px 50px rgba(3, 5, 15, 0.55);
+      }
+      body.theme-light .card {
+        box-shadow: none;
       }
       h2 {
         margin-top: 0;
@@ -106,19 +124,26 @@
         color: var(--muted);
       }
       textarea,
+      select,
       input[type="file"] {
         background: rgba(8, 11, 25, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border);
         border-radius: 16px;
         padding: 1rem;
         color: var(--text);
         font-family: inherit;
       }
+      body.theme-light textarea,
+      body.theme-light select,
+      body.theme-light input[type="file"] {
+        background: #f5f7ff;
+        color: #0f172a;
+      }
       textarea {
         min-height: 160px;
         resize: vertical;
       }
-      button {
+      button.primary {
         border: none;
         border-radius: 999px;
         padding: 0.95rem 1.4rem;
@@ -128,76 +153,223 @@
         background: linear-gradient(135deg, var(--accent), var(--accent-2));
         color: #05060f;
       }
-      button:disabled {
+      button.primary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
       }
-      #result {
-        margin: 0;
-        white-space: pre-wrap;
-        padding: 1.25rem;
+      .template-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .template-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .dropzone {
+        border: 2px dashed rgba(255, 255, 255, 0.3);
         border-radius: 20px;
-        background: radial-gradient(circle at 10% 10%, rgba(64, 255, 163, 0.15), transparent 45%),
-          rgba(8, 11, 25, 0.85);
-        border: 1px solid rgba(64, 255, 163, 0.3);
-        min-height: 160px;
-        font-family: "Space Mono", "Space Grotesk", monospace;
-        color: #9ef9d2;
-        text-shadow: 0 0 8px rgba(64, 255, 163, 0.25);
+        padding: 1.5rem;
+        text-align: center;
+        color: var(--muted);
+        transition: border 0.2s ease, background 0.2s ease;
+      }
+      .dropzone.dragover {
+        border-color: var(--accent);
+        background: rgba(64, 255, 163, 0.08);
+      }
+      body.theme-light .dropzone {
+        border-color: rgba(15, 23, 42, 0.2);
+        color: #4a5568;
+      }
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .preview-item {
+        background: rgba(8, 11, 25, 0.6);
+        border-radius: 16px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .preview-item img {
+        max-width: 100%;
+        border-radius: 12px;
+        height: 90px;
+        object-fit: cover;
+      }
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .result-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .result-actions button {
+        border-radius: 12px;
+        padding: 0.45rem 0.9rem;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
       }
       .disclaimer {
+        color: var(--muted);
         font-size: 0.95rem;
-        line-height: 1.5;
-        color: var(--muted);
       }
-      footer {
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-        padding-top: 1.5rem;
-        color: var(--muted);
+      .tab-bar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin: 1rem 0;
       }
-      footer strong {
+      .tab-bar button {
+        border-radius: 999px;
+        padding: 0.45rem 1rem;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+      }
+      .tab-bar button.active {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        color: #05060f;
+        border: none;
+      }
+      #result-display {
+        border-radius: 20px;
+        padding: 1.25rem;
+        background: radial-gradient(circle at 10% 10%, rgba(64, 255, 163, 0.15), transparent 45%), rgba(8, 11, 25, 0.85);
+        border: 1px solid rgba(64, 255, 163, 0.3);
+        min-height: 160px;
+      }
+      body.theme-light #result-display {
+        background: #f5f7ff;
+        color: #0f172a;
+        border-color: rgba(64, 255, 163, 0.5);
+      }
+      #result-json {
+        margin-top: 1rem;
+        background: rgba(5, 8, 20, 0.9);
+        border-radius: 16px;
+        padding: 1rem;
+        overflow: auto;
+        font-family: "Space Mono", monospace;
+        max-height: 260px;
+      }
+      body.theme-light #result-json {
+        background: #111527;
+        color: #e2e8f0;
+      }
+      .debug-panel {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 16px;
+        background: rgba(5, 8, 20, 0.8);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        font-size: 0.9rem;
+        display: none;
+      }
+      .debug-panel.active {
+        display: block;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 3, 10, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+      }
+      .overlay.hidden {
+        display: none;
+      }
+      .modal-card {
+        background: var(--panel);
+        border-radius: 24px;
+        padding: 2rem;
+        width: min(640px, 92%);
+        border: 1px solid var(--border);
         color: var(--text);
       }
-      footer a {
-        color: var(--accent);
-        text-decoration: none;
+      .modal-card h3 {
+        margin-top: 0;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .toast {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        background: rgba(5, 8, 20, 0.95);
+        color: #fff;
+        padding: 0.85rem 1.1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: none;
+        z-index: 100;
+      }
+      .toast.active {
+        display: block;
+      }
+      .readme-card p {
+        color: var(--muted);
       }
     </style>
   </head>
   <body>
     <header>
-      <p style="text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.85rem; color: var(--accent)">
-        OTTCOUTURE.EU · OPENCORE
-      </p>
+      <p style="text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.85rem; color: var(--accent)">OTTCOUTURE.EU · OPENCORE</p>
       <h1>OPENCORE Analyzer</h1>
       <p>
-        Der Analyzer kombiniert deine Uploads mit unserem offenen Community-Modell „OPENCORE“ und liefert strukturierte JSON
-        Ergebnisse für Cannabis-Analysen.
+        Der Analyzer kombiniert Teachable-Machine-Modelle aus unserem OPENCORE Depot mit strukturierten Prompt-Flows. Ergebnisse
+        werden als sauberes JSON ausgegeben – sachlich, reproduzierbar und unter Kontrolle von <strong>ottcouture.eu</strong>.
       </p>
       <p>
-        Alle Rechte liegen bei <strong>ottcouture.eu</strong>. Kontakt & Support: <strong>otcdmin@outlook.com</strong>,
-        Instagram <strong>@ottcouture.eu</strong> oder Discord
+        Kontakt &amp; Rechte: <strong>otcdmin@outlook.com</strong> · Instagram <strong>@ottcouture.eu</strong> · Discord
         <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener" style="color: var(--accent)">
           discord.gg/GMMSqePfPh
         </a>
-        .
       </p>
-      <div class="actions">
-        <a class="primary" href="/config">Konfiguration &amp; TM Depot</a>
-        <a class="secondary" href="/completions">OTTO Grow-Chat</a>
-        <a class="secondary" href="https://ottcouture.eu" target="_blank" rel="noopener">ottcouture.eu</a>
-        <a class="secondary" href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener"
-          >Discord joinen</a
-        >
+      <div class="top-actions">
+        <button class="pill-button" id="themeToggle">Theme wechseln</button>
+        <button class="pill-button" id="apiSettingsBtn">API-Einstellungen</button>
+        <a class="pill-button" href="/doc/index.html" target="_blank" rel="noopener">Dokumentation</a>
+        <a class="pill-button" href="/config">Konfiguration &amp; TM Depot</a>
+        <a class="pill-button" href="/completions">OTTO Grow-Chat</a>
       </div>
     </header>
 
     <main>
-      <section class="card">
+      <section class="card" style="grid-column: span 2; min-width: 320px">
         <h2>Signal Input</h2>
         <p class="disclaimer">
-          Beschreibe kurz, welche Auswertung du brauchst. Wir leiten Bild und Prompt an das ausgewählte OPENCORE- oder
-          Community-Modell weiter und liefern eine sachliche JSON-Antwort.
+          Modell wählen, Prompt definieren, Upload hinzufügen. Der Analyzer nutzt das OPENCORE Standardmodell oder dein ausgewähltes
+          Depot-Modell.
         </p>
         <form id="analyze-form">
           <label>
@@ -205,157 +377,165 @@
             <select id="model-select">
               <option value="">Modelle werden geladen …</option>
             </select>
-            <small id="model-status">Wir übernehmen automatisch das Standardmodell aus dem Konfigurator.</small>
+            <small id="model-status">Standardmodell wird automatisch übernommen.</small>
           </label>
+          <div class="template-grid">
+            <label>
+              Prompt-Template
+              <select id="template-select">
+                <option value="">Template auswählen …</option>
+              </select>
+            </label>
+            <div class="template-actions">
+              <button type="button" class="pill-button" id="saveTemplateBtn">Eigenes Template speichern</button>
+              <label class="toggle-row" style="font-weight: 500; color: var(--muted)">
+                <input type="checkbox" id="debugToggle" /> Debug anzeigen
+              </label>
+            </div>
+          </div>
+          <div id="customTemplateList" class="template-grid"></div>
           <label>
             Prompt
-            <textarea id="prompt" placeholder="Beschreibe, welche Cannabis-Analyse das Modell durchführen soll" required></textarea>
+            <textarea id="prompt" placeholder="Beschreibe die gewünschte Analyse" required></textarea>
           </label>
           <label>
             Bildmaterial
-            <input id="image" type="file" accept="image/*" required />
+            <input id="image" type="file" accept="image/*" multiple />
+            <small id="fileStatus">Es können mehrere Dateien ausgewählt oder via Drag &amp; Drop hinzugefügt werden.</small>
           </label>
-          <button type="submit">Analyse starten</button>
+          <div id="dropzone" class="dropzone">Dateien hier ablegen oder Auswahl oben nutzen.</div>
+          <div class="action-row" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center">
+            <button class="primary" type="submit" id="analyzeBtn">Analyse starten</button>
+            <span id="runStatus" style="color: var(--muted)">Bereit.</span>
+          </div>
         </form>
       </section>
 
-      <section class="card">
-        <h2>Analyse-Output</h2>
-        <p class="disclaimer">Der Analyzer liefert unveränderte JSON-Daten direkt aus dem Backend.</p>
-        <pre id="result">{
-  "status": "bereit",
-  "hinweis": "Bitte Modell, Prompt und Bild wählen."
-}</pre>
+      <section class="card uploads">
+        <h2>Uploads &amp; Preview</h2>
+        <p class="disclaimer">Thumbnails anklicken, um eine vergrößerte Ansicht zu öffnen.</p>
+        <div id="imagePreviewContainer" class="preview-grid"></div>
       </section>
 
-      <section class="card">
-        <h2>README + Support</h2>
-        <p class="disclaimer">
-          OPENCORE ist unser Open-Source-Community-Modell für Cannabis-Vision. Die Kombination aus Teachable Machine und
-          LLM-Analyse bleibt vollständig bei OTTCOUTURE gebrandet. Feedback oder neue Modelle gern an
-          <strong>otcdmin@outlook.com</strong>, Instagram <strong>@ottcouture.eu</strong> oder Discord
-          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">GMMSqePfPh</a>.
+      <section class="card result-card" style="grid-column: span 2; min-width: 320px">
+        <div class="result-header">
+          <h2>Analyse-Output</h2>
+          <div class="result-actions">
+            <button type="button" id="jsonFullscreenBtn">Fullscreen</button>
+            <button type="button" id="jsonDownloadBtn">JSON herunterladen</button>
+            <button type="button" id="pdfExportBtn">PDF-Report</button>
+            <button type="button" id="shareBtn">Share-Link</button>
+          </div>
+        </div>
+        <div id="result-tabs" class="tab-bar"></div>
+        <div id="result-display">
+          <p class="disclaimer">Noch keine Analyse durchgeführt. Wähle Modell, Prompt und Upload.</p>
+        </div>
+        <pre id="result-json">{
+  "status": "bereit",
+  "hinweis": "Bitte Modell, Prompt und Upload wählen."
+}</pre>
+        <div id="debugPanel" class="debug-panel"></div>
+      </section>
+
+      <section class="card readme-card">
+        <h2>README &amp; Support</h2>
+        <p>
+          OPENCORE ist das Community-Model von ottcouture.eu. Alle Reports bleiben maschinell strukturiert und eignen sich für
+          Audits oder Automation. Support &amp; Feedback: <strong>otcdmin@outlook.com</strong>, Instagram
+          <strong>@ottcouture.eu</strong>, Discord <strong>discord.gg/GMMSqePfPh</strong>.
+        </p>
+        <p>
+          Die Dokumentation zu Prompt-Templates, Batch-Analyse, Debugging, API-Token-Mode, UI-Features, Export und Home-Automation
+          ist im <a href="/doc/index.html" target="_blank" rel="noopener">/doc Bereich</a> verfügbar.
         </p>
       </section>
     </main>
 
-    <footer>
-      <p>
-        © <strong>OTTCOUTURE</strong> — Enterprise Tooling & OpenCore Community Model „OPENCORE“. Rechte: ottcouture.eu ·
-        Support via <a href="mailto:otcdmin@outlook.com">otcdmin@outlook.com</a>, Instagram <strong>@ottcouture.eu</strong>
-        oder Discord <strong>discord.gg/GMMSqePfPh</strong>.
-      </p>
-    </footer>
+    <div class="overlay hidden" id="templateModal">
+      <div class="modal-card">
+        <h3>Eigenes Template speichern</h3>
+        <label>
+          Titel
+          <input type="text" id="templateName" placeholder="z. B. QC Run" />
+        </label>
+        <label>
+          Beschreibung
+          <textarea id="templateDescription" placeholder="Interne Erläuterung"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="pill-button" type="button" id="cancelTemplate">Abbrechen</button>
+          <button class="pill-button accent" type="button" id="confirmTemplate">Speichern</button>
+        </div>
+      </div>
+    </div>
 
-    <script>
-      const form = document.getElementById("analyze-form");
-      const result = document.getElementById("result");
-      const modelSelect = document.getElementById("model-select");
-      const modelStatus = document.getElementById("model-status");
+    <div class="overlay hidden" id="apiModal">
+      <div class="modal-card">
+        <h3>API-Token-Mode</h3>
+        <label>
+          API Base URL
+          <input type="text" id="apiBaseUrl" placeholder="https://partner.tld/api" />
+        </label>
+        <label>
+          API Token
+          <input type="password" id="apiToken" placeholder="Bearer Token" />
+        </label>
+        <label class="toggle-row" style="margin: 1rem 0">
+          <input type="checkbox" id="apiModeEnabled" /> API-Token-Mode aktivieren
+        </label>
+        <p style="color: var(--muted)">
+          Einstellungen werden nur lokal gespeichert. Bei aktivem Modus sendet das UI alle Requests an die Base-URL und setzt
+          automatisch den Authorization-Header.
+        </p>
+        <h4>Code-Beispiele</h4>
+        <pre><code>curl -X POST "$BASE/api/opencore/analyze" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "prompt=Bag Appeal" -F "image=@bud.jpg"
 
-      async function loadModels() {
-        if (!modelSelect) return;
-        modelSelect.disabled = true;
-        modelSelect.innerHTML = "<option>Modelle werden geladen …</option>";
-        let enableSelect = true;
-        try {
-          const response = await fetch("/tm-models");
-          if (!response.ok) throw new Error("HTTP " + response.status);
-          const payload = await response.json();
-          const models = payload.models || [];
-          const hasBuiltin = payload.has_builtin;
-          const defaultId = payload.default_model_id;
-          modelSelect.innerHTML = "";
-          let selection = "";
-          if (models.length === 0 && !hasBuiltin) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = "Kein Modell verfügbar – bitte im Config-Bereich hochladen.";
-            option.disabled = true;
-            modelSelect.appendChild(option);
-            if (modelStatus)
-              modelStatus.textContent =
-                "Bitte mindestens ein Teachable-Machine-Modell im /config Bereich installieren.";
-            enableSelect = false;
-          } else {
-            if (hasBuiltin) {
-              const option = document.createElement("option");
-              option.value = "builtin";
-              option.textContent = "OPENCORE Referenz (TEACHABLE_MODEL_PATH)";
-              modelSelect.appendChild(option);
-              selection = "builtin";
-            }
-            models.forEach((model) => {
-              const option = document.createElement("option");
-              option.value = model.id;
-              option.textContent = `${model.name} (${model.type === "health" ? "Health" : "Trichome"})`;
-              modelSelect.appendChild(option);
-            });
-            if (defaultId && models.some((model) => model.id === defaultId)) {
-              selection = defaultId;
-            } else if (models.length) {
-              selection = selection || models[0].id;
-            }
-            if (selection) {
-              modelSelect.value = selection;
-            }
-            if (modelStatus) {
-              modelStatus.textContent =
-                "Die Auswahl bestimmt, welches Teachable-Machine-Paket für die Analyse geladen wird.";
-            }
-          }
-        } catch (error) {
-          enableSelect = false;
-          if (modelStatus) modelStatus.textContent = "Modelle konnten nicht geladen werden.";
-          console.error("Model load", error);
-        } finally {
-          modelSelect.disabled = !enableSelect;
-        }
-      }
+python requests.post(
+  f"{base}/api/opencore/analyze",
+  headers={"Authorization": f"Bearer {token}"},
+  files={"image": open("bud.jpg", "rb")},
+  data={"prompt": "Trichome"}
+)</code></pre>
+        <div class="modal-actions">
+          <button class="pill-button" type="button" id="resetApiSettings">Einstellungen zurücksetzen</button>
+          <button class="pill-button" type="button" id="closeApiModal">Schließen</button>
+          <button class="pill-button accent" type="button" id="saveApiSettings">Speichern</button>
+        </div>
+      </div>
+    </div>
 
-      loadModels();
+    <div class="overlay hidden" id="imageModal">
+      <div class="modal-card" style="max-width: 900px">
+        <h3 style="display: flex; justify-content: space-between; align-items: center">
+          Bildvorschau
+          <button class="pill-button" type="button" id="closeImageModal">Schließen</button>
+        </h3>
+        <div style="text-align: center">
+          <img id="modalImage" src="" alt="Preview" style="max-width: 100%; border-radius: 16px" />
+        </div>
+        <label style="margin-top: 1rem">
+          Zoom
+          <input type="range" id="zoomSlider" min="50" max="150" value="100" />
+        </label>
+      </div>
+    </div>
 
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        result.textContent = JSON.stringify(
-          {
-            status: "running",
-            info: "Vision + LLM Pipeline aktiv",
-            timestamp: new Date().toISOString(),
-          },
-          null,
-          2
-        );
-        const prompt = document.getElementById("prompt").value;
-        const image = document.getElementById("image").files[0];
-        if (!prompt || !image) {
-          result.textContent = "Prompt und Bild werden benötigt.";
-          return;
-        }
-        const formData = new FormData();
-        formData.append("prompt", prompt);
-        formData.append("image", image);
-        if (modelSelect && modelSelect.value) {
-          formData.append("model_id", modelSelect.value);
-        }
-        try {
-          const response = await fetch("/analyze", {
-            method: "POST",
-            body: formData,
-          });
-          const payload = await response.json();
-          result.textContent = JSON.stringify(payload, null, 2);
-        } catch (error) {
-          result.textContent = JSON.stringify(
-            {
-              status: "error",
-              reason: error?.message || String(error),
-            },
-            null,
-            2
-          );
-        }
-      });
-    </script>
+    <div class="overlay hidden" id="jsonFullscreen">
+      <div class="modal-card" style="max-width: 960px">
+        <h3 style="display: flex; justify-content: space-between; align-items: center">
+          JSON Vollbild
+          <button class="pill-button" type="button" id="closeJsonFullscreen">Schließen</button>
+        </h3>
+        <pre id="jsonFullscreenOutput"></pre>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-/pC24t2EBhJ7ezCmvYzu3/n6PvJEa3TBUnIFVWMGryuVKyXjH9MuquMNFc13JUO2c+hJ1ytY1/6Yr2vNhbbXnw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="/static/js/app.js" defer></script>
   </body>
 </html>

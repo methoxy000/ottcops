@@ -9,6 +9,11 @@ OTTCOPS ist der von [ottcouture.eu](https://ottcouture.eu) betriebene Analyzer f
 - 🧵 **Model Routing**: Das Frontend kann pro Analyse den gewünschten TM-Slot wählen; die Einstellung wird zusätzlich serverseitig in `app-settings.json` persistiert.
 - 🤖 **OTTO Grow Chat** – eigener Screen für kultivierungsrelevante Fragen mit definiertem System Prompt.
 - 📡 **WiFi Broadcast Mode** (mDNS/zeroconf) für Hostnamen wie `ottcolab.local` im gesamten WLAN.
+- 📝 **Prompt-Templates** inkl. lokaler Custom-Presets direkt im Analyzer.
+- 🗂️ **Batch-Analyse** mit `/api/opencore/analyze-batch`, Tabs pro Bild und Gesamt-Report.
+- 🛠️ **Debug-Panel** mit Request-ID, Modellversion und Timings (UI-Toggle + `?debug=1`).
+- 🔐 **API-Token-Mode**: Eigene Base-URL + Token, inkl. Code-Beispielen.
+- 📤 **Export-Paket**: JSON-Download, PDF-Report sowie Share-Links über `/api/opencore/share` + Viewer (`/share/<id>`).
 
 ## Installation im OTTCOUTURE Style
 ```bash
@@ -27,6 +32,7 @@ uvicorn app:app --reload
 2. OTTO Grow Chat: `http://localhost:8000/completions`
 3. Config Hub inkl. TM-Depot: `http://localhost:8000/config`
 4. Discord Crew & Support: [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh)
+5. Dokumentation (HTML): `http://localhost:8000/doc/index.html`
 
 ## Konfiguration
 | Variable | Pflicht | Default | Beschreibung |
@@ -58,12 +64,26 @@ Alle UI-Einstellungen landen im Browser (`localStorage.cannabisLLMConfig`). Die 
 - `GET /config` – Self-Host Konfigurator & TM-Depot
 - `GET /completions` – OTTO Grow Chat UI
 - `POST /analyze` – Bild + Prompt + optional `model_id`
+- `POST /api/opencore/analyze-batch` – Multi-Bild-Analyse (FormData mit `files[]`)
+- `POST /api/opencore/share` & `GET /api/opencore/share/{id}` – JSON-Share-Service (`/share/{id}` liefert Viewer)
 - `POST /api/completions` – OTTO Chat Endpoint (`prompt` im JSON-Body)
 - `GET /tm-models` – Registry + Defaultinformationen
 - `POST /tm-models/upload` – ZIP Upload (`file`, `model_type`, `display_name`)
 - `POST /tm-models/default/{model_id}` – setzt Standardmodell
 - `DELETE /tm-models/default` – entfernt Standardmodell
 - `GET /network/status`, `POST /network/announce`, `DELETE /network/announce` – mDNS Steuerung
+
+## Dokumentation im `/doc`-Verzeichnis
+
+Alle geforderten Feature-Guides liegen als statische HTML-Seiten vor und werden über FastAPI unter `/doc` ausgeliefert:
+
+- `doc/prompts.html` – Vorlagen & Custom-Presets
+- `doc/batch.html` – Batch-Analyse mit API-Beispielen
+- `doc/debug.html` – Debug-Panel
+- `doc/api_token_mode.html` – Professional Mode
+- `doc/ui.html` – UI-Erweiterungen (Drag&Drop, Theme, Zoom, JSON-Fullscreen)
+- `doc/export.html` – JSON/PDF/Share-Export
+- `doc/home_automation.html` – Home-Automation Guide inkl. curl, Python, Node-RED, Home Assistant
 
 ## Projektstruktur
 ```
