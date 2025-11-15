@@ -18,6 +18,11 @@ OTTCOPS ist der von [ottcouture.eu](https://ottcouture.eu) betriebene Analyzer f
 - 🎥 **Stream-Orchestrierung**: Snapshot/RTSP-Quellen laufen als Hintergrundjobs (5 s Capture, 30 s Batch) und liefern automatische Reports.
 - 🔄 **Launch-Update-Check**: Bei jedem Start prüft das Backend gegen `github.com/methoxy000/ottcops` und bietet ein optionales `git pull` an.
 
+## Nutzung & Lizenzpflicht
+- Der OPENCORE Analyzer darf ohne weitere Freigabe ausschließlich von privaten Einzelnutzer:innen und Developer:innen zu Test- und Forschungszwecken betrieben werden.
+- Cannabis Social Clubs (CSCs) und Unternehmen – egal ob Start-up, MSO oder Dienstleister – müssen vor Einsatz in kommerziellen Projekten direkt mit **ottcouture.eu** eine Lizenz vereinbaren.
+- Kontakt für Lizenzen & Partnerschaften: **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
+
 ## Installation im OTTCOUTURE Style
 ```bash
 python -m venv .venv

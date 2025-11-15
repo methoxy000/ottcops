@@ -85,3 +85,4 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 - OTTCOUTURE behält sämtliche Rechte am Markennamen und Branding.
 - Änderungen oder Erweiterungen müssen offen bleiben, wieder unter der AGPL
   veröffentlicht werden und eine eindeutige Attribution an OTTCOUTURE enthalten.
+- Nutzungshinweis: Der OPENCORE Analyzer ist ausschließlich für private Einzelnutzer:innen sowie Developer:innen zu Testzwecken vorgesehen. Cannabis Social Clubs (CSCs) und Unternehmen müssen vor jeglicher kommerzieller Verwendung eine Lizenz direkt bei **ottcouture.eu** (otcdmin@outlook.com) einholen.
