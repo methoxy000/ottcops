@@ -1164,7 +1164,7 @@ def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
 
     if candidate:
         model_path = (BASE_DIR / candidate["path"]).resolve()
-        if not model_path.is_dir():
+        if not model_path.exists():
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -1186,7 +1186,7 @@ def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
         }
 
     model_path = Path(MODEL_PATH)
-    if not model_path.is_dir():
+    if not model_path.exists():
         raise HTTPException(
             status_code=400,
             detail=(
