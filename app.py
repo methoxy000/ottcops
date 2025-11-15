@@ -15,6 +15,8 @@ import logging
 import os
 import re
 import socket
+import os
+import re
 import shutil
 import tempfile
 import zipfile
@@ -87,6 +89,8 @@ NETWORK_DEFAULT_CONFIG = {
 }
 
 _model_cache: Dict[str, tf.keras.Model] = {}
+
+_model: tf.keras.Model | None = None
 _client: OpenAI | None = None
 _network_zeroconf: Zeroconf | None = None
 _network_service: ServiceInfo | None = None
@@ -106,6 +110,8 @@ def _build_logger() -> logging.Logger:
 
 
 logger = _build_logger()
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkPayload(BaseModel):
@@ -251,6 +257,18 @@ def disable_network_mode() -> Dict[str, Any]:
 _network_runtime_config = load_network_config_from_disk()
 _app_settings = load_app_settings()
 
+def disable_network_mode() -> Dict[str, Any]:
+    deactivate_network_broadcast()
+    _network_runtime_config.update(
+        {"enabled": False, "ip": None, "url": None}
+    )
+    save_network_config(_network_runtime_config)
+    return get_network_status()
+
+
+_network_runtime_config = load_network_config_from_disk()
+_app_settings = load_app_settings()
+
 class GPTMeta(BaseModel):
     model: str
     success: bool
@@ -344,6 +362,20 @@ def load_tf_model(model_path: Path) -> tf.keras.Model:
         model = tf.keras.models.load_model(model_path)
         _model_cache[resolved] = model
     return model
+    entries = load_tm_registry()
+    for entry in entries:
+        entry.setdefault("type", "trichome")
+    return entries
+
+
+def get_tf_model() -> tf.keras.Model:
+    """Load and cache the Teachable Machine TensorFlow model."""
+    global _model
+    if _model is None:
+        if not os.path.isdir(MODEL_PATH):
+            raise RuntimeError(f"Model directory '{MODEL_PATH}' not found.")
+        _model = tf.keras.models.load_model(MODEL_PATH)
+    return _model
 
 
 def get_openai_client() -> OpenAI:
@@ -615,6 +647,10 @@ async def tm_models_set_default(model_id: str) -> JSONResponse:
 async def tm_models_clear_default() -> JSONResponse:
     set_default_tm_model(None)
     return JSONResponse({"default_model_id": None})
+@app.get("/tm-models", response_class=JSONResponse)
+async def tm_models() -> JSONResponse:
+    """Return the registered Teachable Machine models."""
+    return JSONResponse({"models": list_tm_models()})
 
 
 @app.post("/tm-models/upload")
@@ -684,6 +720,7 @@ async def upload_tm_model(
         save_app_settings(_app_settings)
 
     return JSONResponse({"message": "Modell gespeichert", "model": entry, "default_model_id": _app_settings.get("default_model_id")})
+    return JSONResponse({"message": "Modell gespeichert", "model": entry})
 
 
 @app.post("/analyze")

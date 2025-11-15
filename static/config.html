@@ -257,6 +257,15 @@
         <p>
           Rechte & Betrieb liegen bei <strong>ottcouture.eu</strong>. Support bitte an <strong>otcdmin@outlook.com</strong>,
           Instagram <strong>@ottcouture.eu</strong> oder Discord
+          OTTCOUTURE.EU — RIGHTS RESERVED
+        </p>
+        <h1>Self-Host Deck für OTTCOPS</h1>
+        <p>
+          Provider-Switchboard für OpenAI, Ollama oder LM Studio. Alles gebrandet & owned by
+          <strong>ottcouture.eu</strong>, keine medizinischen Claims – nur nerdige Cannabis-Vision-Flows.
+        </p>
+        <p>
+          Support ping an <strong>otcdmin@outlook.com</strong>, Insta <strong>@ottcouture.eu</strong> oder Discord
           <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener" style="color: var(--accent)">
             discord.gg/GMMSqePfPh
           </a>
@@ -323,6 +332,8 @@
         <p class="cta">
           Die Presets liefern strukturierte Ausgangsprompts für Trichome-, Terpen- und Health-Analysen. Sie sind bewusst
           knapp formuliert und lassen sich bei Bedarf erweitern.
+          Presets = kurze, nerdige Specs für Trichome-Mapping, Terpen-Pairing oder Leaf-Glitches. Nutze sie als
+          Ausgangspunkt und modde sie nach deinem Flavor.
         </p>
         <div class="prompt-buttons" id="prompt-buttons"></div>
         <textarea id="prompt-text"></textarea>
@@ -380,6 +391,8 @@
           ZIP (metadata.json, model.json, weights.bin) hochladen, Typ wählen und wir pinnen das Paket unter
           <code>/TM-models</code>. Die Modelle stehen anschließend im Analyzer sowie im OTTO-Chat zur Auswahl und bleiben bei
           <strong>ottcouture.eu</strong> gebrandet.
+          <code>/TM-models</code>. Beiträge bleiben bei <strong>ottcouture.eu</strong> gebrandet, egal ob du Starter
+          austauschst oder neue Experimente einspielst.
         </p>
         <div class="grid two">
           <label>
@@ -412,6 +425,8 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         </div>
         <p id="tm-status" class="cta" style="display: none"></p>
         <p id="tm-default-note" class="cta"></p>
+        </div>
+        <p id="tm-status" class="cta" style="display: none"></p>
         <div class="tm-list">
           <h3>Installierte OTTCOPS TM Modelle</h3>
           <ul id="tm-models">
@@ -452,6 +467,8 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
 
       <section class="card">
         <h2>7. Einstellungen speichern</h2>
+      <section class="card">
+        <h2>6. Einstellungen speichern</h2>
         <p>
           Wir speichern alles nur lokal unter <code>localStorage.cannabisLLMConfig</code>. Kopiere den Dump nach
           Bedarf in andere OTTCOPS Instanzen.
@@ -486,24 +503,28 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           label: "Trichome Heatmap",
           text:
             "Analysiere sichtbare Trichome, Harzflächen und Farbverläufe. Erstelle ein JSON mit den Keys resin_density (Prozent), maturity_score (0-100) und observations[] für kurze Stichpunkte.",
+            "Du bist ein OTTCOUTURE Signal-Engineer. Analysiere sichtbare Trichome, Harzflächen und Farbdrift, schätze daraus eine JSON-Heatmap (keys: resin_density, maturity_score, vibe_tags). Keine Medizin, nur rohe Werte mit Prozentbereichen.",
         },
         {
           id: "terpen",
           label: "Terpen Stack",
           text:
             "Leite aus Farbe, Struktur und Kristallen mögliche Terpen-Cluster ab. JSON-Struktur: dominant_terps[], aroma_tags[], pairing_notes.",
+            "Handle als Aroma-Hacker von ottcouture.eu. Lies Farbe, Struktur und Kristall-Highlights aus und leite mögliche Terpen-Cluster ab. Liefere ein JSON mit fields wie dominant_terps[], aroma_tags[], pairing_notes.",
         },
         {
           id: "contaminants",
           label: "Glitch Hunt",
           text:
             "Scanne nach Fremdkörpern, Schimmel oder Blattstress. JSON-Ausgabe mit severity_scores, detected_artifacts und recommended_actions.",
+            "Scanne die Buds nach Glitches: Schimmel, Seeds, abgeknickte Leafs, Fremdobjekte. Erstelle ein JSON mit severity_scores, detected_artifacts und quick_fix_steps. Bleib sachlich, keine medizinischen Versprechen.",
         },
         {
           id: "compliance",
           label: "Drop Dossier",
           text:
             "Dokumentiere sichtbare Merkmale und Verpackungsdetails für ein Sammler-Briefing. JSON-Felder: meta, packaging, release_notes.",
+            "Du baust ein nerdiges Drop-Briefing für Sammler. Dokumentiere sichtbare Merkmale, Batch-Vibes, mögliche Herkunft und packe es in ein JSON mit sections meta, packaging, hype_calls. Fokus auf Style, nicht auf Behörden.",
         },
       ];
 
@@ -643,6 +664,12 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           tmList.innerHTML = "<li>Fehler beim Laden der Modelle.</li>";
           if (tmDefaultNote) tmDefaultNote.textContent = "Standard konnte nicht ermittelt werden.";
           if (tmClearBtn) tmClearBtn.disabled = true;
+            li.appendChild(label);
+            li.appendChild(meta);
+            tmList.appendChild(li);
+          });
+        } catch (error) {
+          tmList.innerHTML = "<li>Fehler beim Laden der Modelle.</li>";
           console.error("TM load", error);
         }
       }
@@ -855,6 +882,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         mdnsStopBtn.addEventListener("click", stopNetworkBroadcast);
       }
       refreshNetworkStatus();
+      refreshTmModels();
     </script>
   </body>
 </html>
