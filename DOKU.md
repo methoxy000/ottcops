@@ -38,7 +38,7 @@ Weitere Persistenzdateien:
 - `app-settings.json`: speichert das Standardmodell und die Provider-/Prompt-Konfiguration aus `/api/settings/llm`.
 - `network-config.json`: merkt sich den mDNS-Status (Hostname/Port für `ottcolab.local`).
 
-Die in `app-settings.json` hinterlegten Providerdaten werden für sämtliche LLM-Aufrufe (Analyzer, Batch-/Stream-Verarbeitung und OTTO-Chat) herangezogen und überstehen so Browserwechsel oder Server-Restarts.
+Die in `app-settings.json` hinterlegten Providerdaten werden für sämtliche LLM-Aufrufe (Analyzer, Batch-/Stream-Verarbeitung und OTTO-Chat) herangezogen und überstehen so Browserwechsel oder Server-Restarts. Mehrere Profile kannst du im Config Hub anlegen/aktivieren; die Dropdowns in Analyzer, Streams und OTTO greifen dann genau dieses Profil.
 
 ## 5. Starten des Servers
 ```bash

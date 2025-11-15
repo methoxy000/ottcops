@@ -454,8 +454,31 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         <h2>7. Einstellungen speichern</h2>
         <p>
           Wir persistieren die Provider-Einstellungen lokal (<code>localStorage.cannabisLLMConfig</code>) und serverseitig über
-          <code>/api/settings/llm</code>. So bleibt deine LLM-Konfiguration auch nach einem Browserwechsel erhalten.
+          <code>/api/settings/llm</code>. Mehrere Profile können hier angelegt und im Analyzer/OTTO ausgewählt werden.
         </p>
+        <div class="grid two">
+          <label>
+            Profil auswählen
+            <select id="llm-profile-list">
+              <option value="">Aktives Server-Profil</option>
+            </select>
+            <small>Profile definieren Provider, Base-URL, Modell und System-Prompt.</small>
+          </label>
+          <label>
+            Profil-Name
+            <input id="llm-profile-name" type="text" placeholder="z. B. OpenAI Vision" />
+            <small>Kurzer Name für die Dropdowns in Analyzer/Streams/OTTO.</small>
+          </label>
+        </div>
+        <div class="actions" style="gap: 0.5rem; margin-bottom: 0.5rem">
+          <button class="secondary" id="llm-profile-new" type="button">Neues Profil</button>
+          <button class="secondary" id="llm-profile-activate" type="button">Als aktiv setzen</button>
+          <button class="secondary" id="llm-profile-delete" type="button">Profil löschen</button>
+        </div>
+        <label style="display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem">
+          <input type="checkbox" id="llm-profile-active" checked />
+          Nach dem Speichern als aktives Profil übernehmen
+        </label>
         <div class="actions">
           <button class="primary" id="save-btn">Speichern</button>
           <button class="secondary" id="reset-btn">Zurücksetzen</button>
@@ -533,6 +556,17 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       const mdnsStartBtn = document.getElementById("mdns-start");
       const mdnsStopBtn = document.getElementById("mdns-stop");
       const llmStatus = document.getElementById("llm-save-status");
+      const llmProfileList = document.getElementById("llm-profile-list");
+      const llmProfileName = document.getElementById("llm-profile-name");
+      const llmProfileNew = document.getElementById("llm-profile-new");
+      const llmProfileDelete = document.getElementById("llm-profile-delete");
+      const llmProfileActivate = document.getElementById("llm-profile-activate");
+      const llmProfileActiveToggle = document.getElementById("llm-profile-active");
+
+      let llmProfiles = [];
+      let activeProfileId = null;
+      let currentProfileId = null;
+      let lastServerConfig = null;
 
       function setActiveProvider(value) {
         providerGroup.querySelectorAll(".provider").forEach((el) => {
@@ -605,14 +639,59 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         llmStatus.textContent = message;
       }
 
-      async function fetchServerLlmConfig() {
+      function renderProfileList() {
+        if (!llmProfileList) return;
+        llmProfileList.innerHTML = "";
+        const base = document.createElement("option");
+        base.value = "";
+        base.textContent = activeProfileId ? `Aktives Server-Profil (${activeProfileId})` : "Aktives Server-Profil";
+        llmProfileList.appendChild(base);
+        llmProfiles.forEach((profile) => {
+          const option = document.createElement("option");
+          option.value = profile.id;
+          const provider = (profile.config && profile.config.provider) || "openai";
+          const activeLabel = profile.id === activeProfileId ? " · aktiv" : "";
+          option.textContent = `${profile.name} (${provider})${activeLabel}`;
+          llmProfileList.appendChild(option);
+        });
+        llmProfileList.value = currentProfileId || "";
+      }
+
+      function applyProfileSelection(profileId) {
+        currentProfileId = profileId || null;
+        const profile = llmProfiles.find((p) => p.id === currentProfileId);
+        if (profile) {
+          llmProfileName.value = profile.name || "";
+          applyConfig(profile.config || {});
+          localStorage.setItem("cannabisLLMConfig", JSON.stringify(profile.config || {}));
+        } else if (lastServerConfig) {
+          llmProfileName.value = "";
+          applyConfig(lastServerConfig);
+        } else {
+          applyConfig({ provider: "openai", vision: "yes", systemPrompt: PROMPTS[0].text });
+        }
+        updatePreview();
+      }
+
+      function applyLlmServerPayload(payload) {
+        if (!payload) return;
+        llmProfiles = payload.profiles || llmProfiles;
+        activeProfileId = payload.active_profile_id ?? activeProfileId;
+        lastServerConfig = payload.config || lastServerConfig;
+        if (payload.profile) {
+          currentProfileId = payload.profile.id;
+          llmProfileName.value = payload.profile.name || "";
+        }
+        renderProfileList();
+      }
+
+      async function fetchServerLlmState() {
         try {
-          const response = await fetch("/api/settings/llm");
+          const response = await fetch("/api/settings/llm/profiles");
           if (!response.ok) return null;
-          const payload = await response.json();
-          return payload.config || null;
+          return await response.json();
         } catch (error) {
-          console.warn("LLM-Konfig konnte nicht geladen werden", error);
+          console.warn("LLM-Profile konnten nicht geladen werden", error);
           return null;
         }
       }
@@ -629,13 +708,20 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           const response = await fetch("/api/settings/llm", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ config }),
+            body: JSON.stringify({
+              config,
+              profile_id: currentProfileId || undefined,
+              profile_name: llmProfileName.value || undefined,
+              make_active: llmProfileActiveToggle?.checked ?? true,
+            }),
           });
           const payload = await response.json().catch(() => ({}));
           if (!response.ok) {
             throw new Error(payload.detail || "Serverfehler beim Speichern");
           }
-          setLlmStatus("Server-Config aktualisiert " + new Date().toLocaleTimeString());
+          applyLlmServerPayload(payload);
+          applyProfileSelection(currentProfileId);
+          setLlmStatus("Profil gespeichert " + new Date().toLocaleTimeString());
         } catch (error) {
           console.error("LLM save", error);
           setLlmStatus(error.message || "Server konnte nicht speichern.", true);
@@ -658,6 +744,12 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           if (!response.ok) {
             throw new Error(payload.detail || "Serverfehler beim Zurücksetzen");
           }
+          llmProfiles = payload.profiles || [];
+          activeProfileId = payload.active_profile_id || null;
+          lastServerConfig = payload.config || null;
+          currentProfileId = activeProfileId;
+          renderProfileList();
+          applyProfileSelection(currentProfileId);
           setLlmStatus("Server-Config zurückgesetzt.");
         } catch (error) {
           console.error("LLM reset", error);
@@ -666,11 +758,15 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       }
 
       async function bootstrapLlmConfig() {
-        const serverConfig = await fetchServerLlmConfig();
-        if (serverConfig) {
-          localStorage.setItem("cannabisLLMConfig", JSON.stringify(serverConfig));
-          applyConfig(serverConfig);
-          setLlmStatus("Server-Config geladen.");
+        const serverState = await fetchServerLlmState();
+        if (serverState) {
+          llmProfiles = serverState.profiles || [];
+          activeProfileId = serverState.active_profile_id || null;
+          lastServerConfig = serverState.config || null;
+          currentProfileId = activeProfileId || (llmProfiles[0]?.id || null);
+          renderProfileList();
+          applyProfileSelection(currentProfileId);
+          setLlmStatus("Server-Profile geladen.");
           return;
         }
         const stored = localStorage.getItem("cannabisLLMConfig");
@@ -904,6 +1000,57 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       [apiBaseInput, modelInput, apiKeyInput, visionSelect, promptText].forEach((el) =>
         el.addEventListener("input", updatePreview)
       );
+
+      if (llmProfileList) {
+        llmProfileList.addEventListener("change", (event) => applyProfileSelection(event.target.value));
+      }
+      if (llmProfileNew) {
+        llmProfileNew.addEventListener("click", () => {
+          currentProfileId = null;
+          llmProfileName.value = "";
+          applyConfig({ provider: "openai", vision: "yes", systemPrompt: PROMPTS[0].text });
+          updatePreview();
+          setLlmStatus("Neues Profil vorbereitet. Jetzt speichern.");
+        });
+      }
+      if (llmProfileDelete) {
+        llmProfileDelete.addEventListener("click", async () => {
+          if (!currentProfileId) {
+            setLlmStatus("Kein Profil ausgewählt.", true);
+            return;
+          }
+          if (!confirm("Profil wirklich löschen?")) return;
+          try {
+            const response = await fetch(`/api/settings/llm/profiles/${currentProfileId}`, { method: "DELETE" });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.detail || "Serverfehler beim Löschen");
+            applyLlmServerPayload(payload);
+            currentProfileId = payload.active_profile_id || null;
+            applyProfileSelection(currentProfileId);
+            setLlmStatus(payload.message || "Profil entfernt.");
+          } catch (error) {
+            setLlmStatus(error.message || "Profil konnte nicht gelöscht werden.", true);
+          }
+        });
+      }
+      if (llmProfileActivate) {
+        llmProfileActivate.addEventListener("click", async () => {
+          if (!currentProfileId) {
+            setLlmStatus("Kein Profil ausgewählt.", true);
+            return;
+          }
+          try {
+            const response = await fetch(`/api/settings/llm/profiles/${currentProfileId}/activate`, { method: "POST" });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.detail || "Aktivierung fehlgeschlagen");
+            applyLlmServerPayload(payload);
+            applyProfileSelection(currentProfileId);
+            setLlmStatus(payload.message || "Aktives Profil aktualisiert.");
+          } catch (error) {
+            setLlmStatus(error.message || "Profil konnte nicht aktiviert werden.", true);
+          }
+        });
+      }
 
       if (saveBtn) {
         saveBtn.addEventListener("click", (event) => {

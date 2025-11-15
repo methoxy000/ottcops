@@ -172,6 +172,7 @@ class StreamJob:
     analysis_mode: str
     prompt: str
     model_id: Optional[str]
+    llm_profile_id: Optional[str] = None
     capture_interval: float = STREAM_CAPTURE_INTERVAL_DEFAULT
     batch_interval: float = STREAM_BATCH_INTERVAL_DEFAULT
     running: bool = False
@@ -207,6 +208,7 @@ class StreamManager:
                 analysis_mode=payload.get("analysis_mode", "hybrid"),
                 prompt=payload.get("prompt", ""),
                 model_id=payload.get("model_id"),
+                llm_profile_id=payload.get("llm_profile_id") or None,
                 capture_interval=float(payload.get("capture_interval", STREAM_CAPTURE_INTERVAL_DEFAULT)),
                 batch_interval=float(payload.get("batch_interval", STREAM_BATCH_INTERVAL_DEFAULT)),
             )
@@ -277,6 +279,7 @@ class StreamManager:
             "source_url": job.source_url,
             "source_type": job.source_type,
             "analysis_mode": job.analysis_mode,
+            "llm_profile_id": job.llm_profile_id,
             "capture_interval": job.capture_interval,
             "batch_interval": job.batch_interval,
             "last_capture_ts": job.last_capture_ts,
@@ -342,6 +345,8 @@ class StreamManager:
         items: List[Dict[str, Any]] = []
         total_model_ms = 0.0
         total_llm_ms = 0.0
+        resolved_profile = job.llm_profile_id or get_active_llm_profile_id()
+        llm_config = get_llm_config(resolved_profile)
         for idx, frame in enumerate(frames, start=1):
             if job.analysis_mode == "ml":
                 classification, timings = perform_ml_only(frame, model_entry)
@@ -350,8 +355,8 @@ class StreamManager:
                 items.append({"image_id": f"{job.stream_id}-{idx}", "analysis": payload})
             else:
                 prompt = job.prompt or "Automatisierter Stream-Report"
-                classification, gpt_response, timings = perform_analysis(prompt, frame, model_entry)
-                payload = build_analysis_payload(classification, gpt_response, model_entry, timings)
+                classification, gpt_response, timings = perform_analysis(prompt, frame, model_entry, llm_config)
+                payload = build_analysis_payload(classification, gpt_response, model_entry, timings, llm_config)
                 total_model_ms += timings["model_ms"]
                 total_llm_ms += timings["llm_ms"]
                 items.append({"image_id": f"{job.stream_id}-{idx}", "analysis": payload})
@@ -360,7 +365,7 @@ class StreamManager:
         summary_text = (
             summarize_ml_items(items)
             if job.analysis_mode == "ml"
-            else summarize_batch(job.prompt or "Stream-Auswertung", items)
+            else summarize_batch(job.prompt or "Stream-Auswertung", items, llm_config)
         )
         job.last_result = {
             "status": "ok",
@@ -373,7 +378,8 @@ class StreamManager:
                     "model_ms": round(total_model_ms, 2),
                     "llm_ms": round(total_llm_ms, 2),
                     "total_ms": round(total_model_ms + total_llm_ms, 2),
-                }
+                },
+                "llm_profile_id": resolved_profile,
             },
             "captured": datetime.utcnow().isoformat() + "Z",
         }
@@ -493,6 +499,7 @@ class NetworkPayload(BaseModel):
 
 class CompletionPayload(BaseModel):
     prompt: str
+    llm_profile_id: Optional[str] = None
 
 
 class SharePayload(BaseModel):
@@ -506,12 +513,23 @@ class StreamCreatePayload(BaseModel):
     analysis_mode: str = "hybrid"
     prompt: Optional[str] = ""
     model_id: Optional[str] = None
+    llm_profile_id: Optional[str] = None
     capture_interval: float = STREAM_CAPTURE_INTERVAL_DEFAULT
     batch_interval: float = STREAM_BATCH_INTERVAL_DEFAULT
 
 
 class LLMConfigPayload(BaseModel):
     config: Dict[str, Any] = Field(default_factory=dict)
+    profile_id: Optional[str] = None
+    profile_name: Optional[str] = None
+    make_active: bool = True
+
+
+class LLMProfilePayload(BaseModel):
+    profile_id: Optional[str] = None
+    name: Optional[str] = None
+    config: Dict[str, Any] = Field(default_factory=dict)
+    activate: bool = True
 
 
 def normalize_llm_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -543,16 +561,45 @@ def normalize_llm_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     return config
 
 
+def normalize_llm_profile(entry: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Ensure a profile dict always contains id, name and normalized config."""
+
+    if not isinstance(entry, dict):
+        return None
+    config = normalize_llm_config(entry.get("config"))
+    profile_id = str(entry.get("id") or entry.get("profile_id") or uuid.uuid4().hex)
+    name = (entry.get("name") or f"Profil {profile_id[:6]}").strip()
+    return {"id": profile_id, "name": name or profile_id, "config": config}
+
+
+def normalize_llm_profiles(raw: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    profiles: List[Dict[str, Any]] = []
+    if isinstance(raw, list):
+        for entry in raw:
+            normalized = normalize_llm_profile(entry)
+            if normalized:
+                profiles.append(normalized)
+    return profiles
+
+
 def load_app_settings() -> Dict[str, Any]:
     defaults = {
         "default_model_id": None,
         "llm_config": DEFAULT_LLM_CONFIG.copy(),
+        "llm_profiles": [],
+        "active_llm_profile": None,
     }
     if SETTINGS_PATH.is_file():
         try:
             data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
             defaults.update({k: v for k, v in data.items() if k != "llm_config"})
             defaults["llm_config"] = normalize_llm_config(data.get("llm_config"))
+            defaults["llm_profiles"] = normalize_llm_profiles(data.get("llm_profiles"))
+            defaults["active_llm_profile"] = data.get("active_llm_profile")
+            if defaults["active_llm_profile"] and not any(
+                p.get("id") == defaults["active_llm_profile"] for p in defaults["llm_profiles"]
+            ):
+                defaults["active_llm_profile"] = None
         except json.JSONDecodeError:
             logger.warning("app-settings.json konnte nicht geparst werden, fallback auf Defaults.")
     return defaults
@@ -562,8 +609,70 @@ def save_app_settings(data: Dict[str, Any]) -> None:
     SETTINGS_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-def get_llm_config() -> Dict[str, Any]:
+def get_llm_profiles() -> List[Dict[str, Any]]:
+    profiles = normalize_llm_profiles(_app_settings.get("llm_profiles") or [])
+    _app_settings["llm_profiles"] = profiles
+    return profiles
+
+
+def get_active_llm_profile_id() -> Optional[str]:
+    return _app_settings.get("active_llm_profile")
+
+
+def get_llm_config(profile_id: Optional[str] = None) -> Dict[str, Any]:
+    profiles = get_llm_profiles()
+    target_id = profile_id or get_active_llm_profile_id()
+    if target_id:
+        for profile in profiles:
+            if profile.get("id") == target_id:
+                return normalize_llm_config(profile.get("config"))
     return normalize_llm_config(_app_settings.get("llm_config"))
+
+
+def set_active_llm_profile(profile_id: Optional[str]) -> Optional[str]:
+    profiles = get_llm_profiles()
+    if profile_id is None:
+        _app_settings["active_llm_profile"] = None
+    elif any(p.get("id") == profile_id for p in profiles):
+        _app_settings["active_llm_profile"] = profile_id
+    else:
+        raise HTTPException(status_code=404, detail="Profil nicht gefunden.")
+    save_app_settings(_app_settings)
+    return _app_settings.get("active_llm_profile")
+
+
+def upsert_llm_profile(
+    config: Dict[str, Any], name: Optional[str] = None, profile_id: Optional[str] = None, activate: bool = True
+) -> Dict[str, Any]:
+    profiles = get_llm_profiles()
+    normalized = normalize_llm_profile({"config": config, "id": profile_id, "name": name})
+    if normalized is None:
+        raise HTTPException(status_code=400, detail="Profil konnte nicht normalisiert werden.")
+    updated = False
+    for idx, profile in enumerate(profiles):
+        if profile.get("id") == normalized["id"]:
+            profiles[idx] = normalized
+            updated = True
+            break
+    if not updated:
+        profiles.append(normalized)
+    _app_settings["llm_profiles"] = profiles
+    if activate:
+        _app_settings["active_llm_profile"] = normalized["id"]
+    save_app_settings(_app_settings)
+    return normalized
+
+
+def delete_llm_profile(profile_id: str) -> List[Dict[str, Any]]:
+    profiles = get_llm_profiles()
+    filtered = [p for p in profiles if p.get("id") != profile_id]
+    if len(filtered) == len(profiles):
+        raise HTTPException(status_code=404, detail="Profil nicht gefunden.")
+    _app_settings["llm_profiles"] = filtered
+    if _app_settings.get("active_llm_profile") == profile_id:
+        _app_settings["active_llm_profile"] = None
+    save_app_settings(_app_settings)
+    return filtered
 
 
 def persist_llm_config(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -575,6 +684,17 @@ def persist_llm_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
 def reset_llm_config() -> Dict[str, Any]:
     return persist_llm_config(DEFAULT_LLM_CONFIG.copy())
+
+
+def build_llm_settings_payload(message: Optional[str] = None) -> Dict[str, Any]:
+    payload = {
+        "config": get_llm_config(),
+        "profiles": get_llm_profiles(),
+        "active_profile_id": get_active_llm_profile_id(),
+    }
+    if message:
+        payload["message"] = message
+    return payload
 
 
 def get_effective_model_name(config: Dict[str, Any], fallback: str = GPT_MODEL) -> str:
@@ -748,6 +868,7 @@ def build_debug_payload(
     batch_items: int = 1,
     debug_enabled: bool = False,
     error: str | None = None,
+    llm_profile_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Compose a structured debug payload for the frontend panel."""
 
@@ -762,6 +883,8 @@ def build_debug_payload(
         "debug_enabled": debug_enabled,
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }
+    if llm_profile_id:
+        payload["llm_profile_id"] = llm_profile_id
     if error:
         payload["error"] = error
     return payload
@@ -772,10 +895,11 @@ def build_analysis_payload(
     gpt_response: str,
     model_entry: Dict[str, Any],
     timings: Dict[str, float],
+    llm_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Bundle classification, LLM output and metadata for a single asset."""
 
-    llm_config = get_llm_config()
+    llm_config = llm_config or get_llm_config()
     return {
         "classification": classification,
         "gpt_response": gpt_response,
@@ -798,7 +922,7 @@ def build_ml_payload(
 
 
 def perform_analysis(
-    prompt: str, image_bytes: bytes, model_entry: Dict[str, Any]
+    prompt: str, image_bytes: bytes, model_entry: Dict[str, Any], llm_config: Optional[Dict[str, Any]] = None
 ) -> tuple[Dict[str, Any], str, Dict[str, float]]:
     """Execute the TM classification and GPT call with timing data."""
 
@@ -807,7 +931,7 @@ def perform_analysis(
     classification = classify_image(image_bytes, model_entry)
     model_ms = measure_elapsed_ms(model_start)
     llm_start = time.perf_counter()
-    gpt_response = call_gpt_with_image_context(prompt, classification, image_bytes)
+    gpt_response = call_gpt_with_image_context(prompt, classification, image_bytes, llm_config)
     llm_ms = measure_elapsed_ms(llm_start)
     timings = {
         "model_ms": model_ms,
@@ -827,7 +951,7 @@ def perform_ml_only(image_bytes: bytes, model_entry: Dict[str, Any]) -> tuple[Di
     return classification, timings
 
 
-def summarize_batch(prompt: str, items: List[Dict[str, Any]]) -> str:
+def summarize_batch(prompt: str, items: List[Dict[str, Any]], llm_config: Optional[Dict[str, Any]] = None) -> str:
     """Request a concise batch summary based on individual GPT responses."""
 
     context_lines = []
@@ -839,7 +963,7 @@ def summarize_batch(prompt: str, items: List[Dict[str, Any]]) -> str:
         f"{prompt}\n" "Einzelresultate:\n" + "\n".join(context_lines)
         + "\nFormuliere eine strukturierte Zusammenfassung mit Hauptbefunden und Empfehlungen."
     )
-    config = get_llm_config()
+    config = llm_config or get_llm_config()
     messages = [
         {
             "role": "system",
@@ -1558,11 +1682,11 @@ def classify_image(image_bytes: bytes, model_entry: Dict[str, Any]) -> Dict[str,
 
 
 def call_gpt_with_image_context(
-    user_prompt: str, classification: Dict[str, Any], image_bytes: bytes
+    user_prompt: str, classification: Dict[str, Any], image_bytes: bytes, llm_config: Optional[Dict[str, Any]] = None
 ) -> str:
     """Send the classification context plus the user's prompt (and image) to the configured LLM."""
 
-    config = get_llm_config()
+    config = llm_config or get_llm_config()
     distribution = ", ".join(
         f"{pred['label']}: {pred['confidence']:.2%}"
         for pred in classification["all_predictions"]
@@ -1666,7 +1790,7 @@ async def completions_ui() -> HTMLResponse:
 async def fetch_llm_settings() -> JSONResponse:
     """Return the persisted LLM/provider configuration for the config UI."""
 
-    return JSONResponse({"config": get_llm_config()})
+    return JSONResponse(build_llm_settings_payload())
 
 
 @app.post("/api/settings/llm", response_class=JSONResponse)
@@ -1675,8 +1799,16 @@ async def persist_llm_settings(payload: LLMConfigPayload) -> JSONResponse:
 
     if not payload.config:
         raise HTTPException(status_code=400, detail="Konfiguration fehlt.")
+    if payload.profile_id or payload.profile_name:
+        profile = upsert_llm_profile(payload.config, payload.profile_name, payload.profile_id, payload.make_active)
+        return JSONResponse(
+            {
+                **build_llm_settings_payload("Profil gespeichert."),
+                "profile": profile,
+            }
+        )
     config = persist_llm_config(payload.config)
-    return JSONResponse({"config": config, "message": "LLM-Konfiguration gespeichert."})
+    return JSONResponse({**build_llm_settings_payload("LLM-Konfiguration gespeichert."), "config": config})
 
 
 @app.delete("/api/settings/llm", response_class=JSONResponse)
@@ -1684,7 +1816,34 @@ async def clear_llm_settings() -> JSONResponse:
     """Reset the provider configuration to defaults."""
 
     config = reset_llm_config()
-    return JSONResponse({"config": config, "message": "LLM-Konfiguration zurückgesetzt."})
+    return JSONResponse({**build_llm_settings_payload("LLM-Konfiguration zurückgesetzt."), "config": config})
+
+
+@app.get("/api/settings/llm/profiles", response_class=JSONResponse)
+async def list_llm_profiles_endpoint() -> JSONResponse:
+    """Expose all saved LLM profiles and the active selection."""
+
+    return JSONResponse(build_llm_settings_payload())
+
+
+@app.post("/api/settings/llm/profiles", response_class=JSONResponse)
+async def upsert_llm_profile_endpoint(payload: LLMProfilePayload) -> JSONResponse:
+    if not payload.config:
+        raise HTTPException(status_code=400, detail="Profilkonfiguration fehlt.")
+    profile = upsert_llm_profile(payload.config, payload.name, payload.profile_id, payload.activate)
+    return JSONResponse({**build_llm_settings_payload("Profil gespeichert."), "profile": profile})
+
+
+@app.post("/api/settings/llm/profiles/{profile_id}/activate", response_class=JSONResponse)
+async def activate_llm_profile(profile_id: str) -> JSONResponse:
+    set_active_llm_profile(profile_id)
+    return JSONResponse(build_llm_settings_payload("Aktives Profil gesetzt."))
+
+
+@app.delete("/api/settings/llm/profiles/{profile_id}", response_class=JSONResponse)
+async def delete_llm_profile_endpoint(profile_id: str) -> JSONResponse:
+    delete_llm_profile(profile_id)
+    return JSONResponse(build_llm_settings_payload("Profil entfernt."))
 
 
 @app.get("/network/status", response_class=JSONResponse)
@@ -1807,6 +1966,7 @@ async def analyze_batch(
     model_id: Optional[str] = Form(default=None),
     debug: Optional[str] = Form(default=None),
     analysis_mode: str = Form(default="hybrid"),
+    llm_profile_id: Optional[str] = Form(default=None),
     files: List[UploadFile] = File(..., alias="files[]"),
 ) -> JSONResponse:
     normalized_mode = (analysis_mode or "hybrid").lower()
@@ -1820,6 +1980,8 @@ async def analyze_batch(
     request_id = generate_request_id()
     debug_flag = parse_bool_flag(debug)
     model_entry = resolve_model_entry(model_id)
+    resolved_llm_profile = llm_profile_id or get_active_llm_profile_id()
+    llm_config = get_llm_config(resolved_llm_profile)
     items: List[Dict[str, Any]] = []
     for idx, file in enumerate(files, start=1):
         data = await file.read()
@@ -1829,8 +1991,8 @@ async def analyze_batch(
             classification, timings = perform_ml_only(data, model_entry)
             analysis_payload = build_ml_payload(classification, model_entry, timings)
         else:
-            classification, gpt_response, timings = perform_analysis(prompt, data, model_entry)
-            analysis_payload = build_analysis_payload(classification, gpt_response, model_entry, timings)
+            classification, gpt_response, timings = perform_analysis(prompt, data, model_entry, llm_config)
+            analysis_payload = build_analysis_payload(classification, gpt_response, model_entry, timings, llm_config)
         items.append(
             {
                 "image_id": file.filename or f"image-{idx}",
@@ -1839,7 +2001,9 @@ async def analyze_batch(
         )
 
     summary_text = (
-        summarize_ml_items(items) if normalized_mode == "ml" else summarize_batch(prompt, items)
+        summarize_ml_items(items)
+        if normalized_mode == "ml"
+        else summarize_batch(prompt, items, llm_config)
     )
     aggregated_timings = {
         "model_ms": round(sum(item["analysis"]["timings"]["model_ms"] for item in items), 2),
@@ -1862,6 +2026,7 @@ async def analyze_batch(
             aggregated_timings,
             batch_items=len(items),
             debug_enabled=debug_flag,
+            llm_profile_id=resolved_llm_profile,
         ),
     }
     return JSONResponse(response_payload)
@@ -1874,6 +2039,7 @@ async def analyze(
     model_id: Optional[str] = Form(default=None),
     debug: Optional[str] = Form(default=None),
     analysis_mode: str = Form(default="hybrid"),
+    llm_profile_id: Optional[str] = Form(default=None),
 ) -> JSONResponse:
     """Endpoint that classifies an image and optionally calls GPT."""
     if image is None:
@@ -1892,6 +2058,7 @@ async def analyze(
         raise HTTPException(status_code=400, detail=f"Failed to read uploaded image: {exc}") from exc
 
     model_entry = resolve_model_entry(model_id)
+    llm_config = get_llm_config(llm_profile_id)
     if normalized_mode == "ml":
         classification, timings = perform_ml_only(image_bytes, model_entry)
         analysis_payload = build_ml_payload(classification, model_entry, timings)
@@ -1902,10 +2069,11 @@ async def analyze(
             timings,
             batch_items=1,
             debug_enabled=debug_flag,
+            llm_profile_id=resolved_llm_profile,
         )
     else:
-        classification, gpt_response, timings = perform_analysis(prompt, image_bytes, model_entry)
-        analysis_payload = build_analysis_payload(classification, gpt_response, model_entry, timings)
+        classification, gpt_response, timings = perform_analysis(prompt, image_bytes, model_entry, llm_config)
+        analysis_payload = build_analysis_payload(classification, gpt_response, model_entry, timings, llm_config)
         debug_payload = build_debug_payload(
             request_id,
             model_entry,
@@ -1913,6 +2081,7 @@ async def analyze(
             timings,
             batch_items=1,
             debug_enabled=debug_flag,
+            llm_profile_id=resolved_llm_profile,
         )
     return JSONResponse(content={**analysis_payload, "analysis_mode": normalized_mode, "debug": debug_payload})
 
@@ -1959,7 +2128,14 @@ async def create_stream(payload: StreamCreatePayload) -> JSONResponse:
         raise HTTPException(status_code=400, detail="Prompt erforderlich für Hybrid-Modus.")
     if payload.capture_interval < 1 or payload.batch_interval < 5:
         raise HTTPException(status_code=400, detail="Intervalle zu klein.")
-    job = stream_manager.start_job({**payload.dict(), "source_type": source_type, "analysis_mode": analysis_mode})
+    job = stream_manager.start_job(
+        {
+            **payload.dict(),
+            "source_type": source_type,
+            "analysis_mode": analysis_mode,
+            "llm_profile_id": payload.llm_profile_id or None,
+        }
+    )
     return JSONResponse({"stream": job})
 
 
@@ -1996,8 +2172,8 @@ async def otto_completion(payload: CompletionPayload) -> JSONResponse:
         {"role": "system", "content": OTTO_SYSTEM_PROMPT},
         {"role": "user", "content": payload.prompt.strip()},
     ]
-    answer = execute_llm_chat(messages)
-    config = get_llm_config()
+    config = get_llm_config(payload.llm_profile_id)
+    answer = execute_llm_chat(messages, config)
     return JSONResponse({"response": answer, "model": get_effective_model_name(config)})
 
 
