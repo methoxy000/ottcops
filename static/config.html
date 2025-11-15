@@ -377,9 +377,9 @@
       <section class="card" id="tm-depot">
         <h2>5. OTTCOUTURE Teachable Machine Depot</h2>
         <p>
-          ZIP (metadata.json, model.json, weights.bin) hochladen, Typ wählen und wir pinnen das Paket unter
-          <code>/TM-models</code>. Die Modelle stehen anschließend im Analyzer sowie im OTTO-Chat zur Auswahl und bleiben bei
-          <strong>ottcouture.eu</strong> gebrandet.
+          ZIP hochladen (entweder TFJS mit <code>metadata.json</code>/<code>model.json</code>/<code>weights.bin</code> oder Keras mit
+          <code>keras_model.h5</code> + <code>labels.txt</code>), Typ wählen und wir pinnen das Paket unter <code>/TM-models</code>. Die Modelle
+          stehen anschließend im Analyzer sowie im OTTO-Chat zur Auswahl und bleiben bei <strong>ottcouture.eu</strong> gebrandet.
         </p>
         <div class="grid two">
           <label>
@@ -396,7 +396,7 @@
           <label>
             <span>ZIP Upload</span>
             <input id="tm-file" type="file" accept=".zip" />
-            <small>Struktur im Archiv: metadata.json, model.json, weights.bin.</small>
+            <small>Struktur: TFJS (metadata.json/model.json/weights.bin) oder Keras (keras_model.h5 + labels.txt [+ optional metadata.json]).</small>
           </label>
           <label>
             <span>Community Reminder</span>

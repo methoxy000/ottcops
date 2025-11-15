@@ -5,7 +5,7 @@ OTTCOPS ist der von [ottcouture.eu](https://ottcouture.eu) betriebene Analyzer f
 ## Feature Highlights
 - 🌿 **FastAPI Core** mit Analyzer, Config Deck, OTTO-Chat (`/completions`) und dokumentierten `/tm-models*` Routen.
 - 🧠 **Vision LLM Switchboard** für OpenAI, Ollama oder LM Studio inkl. System-Presetverwaltung.
-- 🧪 **Teachable-Machine-Depot** mit ZIP-Uploads (metadata.json, model.json, weights.bin), Registry und Standardauswahl für den Analyzer.
+- 🧪 **Teachable-Machine-Depot** mit ZIP-Uploads (TFJS: metadata.json/model.json/weights.bin oder Keras: keras_model.h5 + labels.txt), Registry und Standardauswahl für den Analyzer.
 - 🧵 **Model Routing**: Das Frontend kann pro Analyse den gewünschten TM-Slot wählen; die Einstellung wird zusätzlich serverseitig in `app-settings.json` persistiert.
 - 🤖 **OTTO Grow Chat** – eigener Screen für kultivierungsrelevante Fragen mit definiertem System Prompt.
 - 📡 **WiFi Broadcast Mode** (mDNS/zeroconf) für Hostnamen wie `ottcolab.local` im gesamten WLAN.
@@ -17,6 +17,11 @@ OTTCOPS ist der von [ottcouture.eu](https://ottcouture.eu) betriebene Analyzer f
 - 🧷 **ML-only Analysemodus**: `analysis_mode=ml` liefert reine Teachable-Machine-JSONs ohne GPT-Laufzeit.
 - 🎥 **Stream-Orchestrierung**: Snapshot/RTSP-Quellen laufen als Hintergrundjobs (5 s Capture, 30 s Batch) und liefern automatische Reports.
 - 🔄 **Launch-Update-Check**: Bei jedem Start prüft das Backend gegen `github.com/methoxy000/ottcops` und bietet ein optionales `git pull` an.
+
+## Nutzung & Lizenzpflicht
+- Der OPENCORE Analyzer darf ohne weitere Freigabe ausschließlich von privaten Einzelnutzer:innen und Developer:innen zu Test- und Forschungszwecken betrieben werden.
+- Cannabis Social Clubs (CSCs) und Unternehmen – egal ob Start-up, MSO oder Dienstleister – müssen vor Einsatz in kommerziellen Projekten direkt mit **ottcouture.eu** eine Lizenz vereinbaren.
+- Kontakt für Lizenzen & Partnerschaften: **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
 
 ## Installation im OTTCOUTURE Style
 ```bash
@@ -56,13 +61,14 @@ Alle UI-Einstellungen landen im Browser (`localStorage.cannabisLLMConfig`). Die 
 5. Jetzt sollten Smartphones, Tablets und Desktop-Geräte im selben Netzwerk `http://ottcolab.local:8000/` aufrufen können. Feedback bitte weiterhin an **otcdmin@outlook.com**, Instagram **@ottcouture.eu** oder [Discord](https://discord.gg/GMMSqePfPh).
 
 ## Teachable Machine Depot (`/TM-models`)
-1. Exportiere dein Google Teachable-Machine-Projekt als **TensorFlow** Paket (enthält `metadata.json`, `model.json`, `weights.bin`).
+1. Exportiere dein Google Teachable-Machine-Projekt als **TensorFlow** Paket (enthält `metadata.json`, `model.json`, `weights.bin`) oder als **Keras (.h5) Paket** mit `keras_model.h5` und `labels.txt`.
 2. Öffne `http://localhost:8000/config` und nutze den Abschnitt „OTTCOUTURE Teachable Machine Depot“.
 3. Nach dem Upload landet das Modell unter `/TM-models/<slug>` und wird in `TM-models/registry.json` geführt.
-4. Die Listenansicht erlaubt pro Modell den Status „Standard im Analyzer“. Der Standard wird zusätzlich in `app-settings.json` notiert.
-5. Wird kein Community-Modell ausgewählt, greift der Analyzer auf `TEACHABLE_MODEL_PATH` (OPENCORE Referenz) zurück.
+4. Der Server wandelt TFJS-Exporte automatisch in ein TensorFlow SavedModel um (`tensorflowjs` wird hierzu clientseitig mitgeliefert). Fehlende Konverter oder defekte Bundles führen zu einer klaren Fehlermeldung.
+5. Die Listenansicht erlaubt pro Modell den Status „Standard im Analyzer“. Der Standard wird zusätzlich in `app-settings.json` notiert.
+6. Wird kein Community-Modell ausgewählt, greift der Analyzer auf `TEACHABLE_MODEL_PATH` (OPENCORE Referenz) zurück.
 
-> Pflichtdateien: `metadata.json`, `model.json`, `weights.bin`. Fehlen Bestandteile, lehnt der Upload ab.
+> Pflichtdateien: entweder `metadata.json`, `model.json`, `weights.bin` **oder** `keras_model.h5` plus `labels.txt`. Fehlen Bestandteile, lehnt der Upload ab.
 
 ## API Routen
 - `GET /` – Analyzer Landing Page mit Modellauswahl

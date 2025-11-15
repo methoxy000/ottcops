@@ -1,6 +1,6 @@
 """
 Example FastAPI application that combines a Teachable Machine image classifier
-with an OpenAI GPT model to generate rich responses.
+with ansds OpenAI GPT model to generate rich responses.
 
 Required dependencies:
     pip install fastapi uvicorn tensorflow pillow openai python-multipart
@@ -20,6 +20,7 @@ import secrets
 import socket
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -69,7 +70,11 @@ SHARE_UI_PATH = BASE_DIR / "static" / "share.html"
 TM_MODELS_DIR = BASE_DIR / "TM-models"
 TM_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 TM_REGISTRY_PATH = TM_MODELS_DIR / "registry.json"
-REQUIRED_TM_FILES = {"metadata.json", "model.json", "weights.bin"}
+TFJS_REQUIRED_FILES = {"metadata.json", "model.json", "weights.bin"}
+TFJS_REQUIRED_FILES_LOWER = {name.lower() for name in TFJS_REQUIRED_FILES}
+KERAS_LABEL_FILE = "labels.txt"
+KERAS_SUFFIXES = {".keras", ".h5", ".hdf5"}
+KERAS_CUSTOM_OBJECTS: dict[str, Any] | None = None
 NETWORK_CONFIG_FILENAME = "network-config.json"
 SETTINGS_PATH = BASE_DIR / "app-settings.json"
 DOCS_DIR = BASE_DIR / "doc"
@@ -97,7 +102,7 @@ STREAM_CAPTURE_INTERVAL_DEFAULT = 5.0
 STREAM_BATCH_INTERVAL_DEFAULT = 30.0
 STREAM_BUFFER_MAX = 24
 
-_model_cache: Dict[str, tf.keras.Model] = {}
+_model_cache: Dict[str, Any] = {}
 _client: OpenAI | None = None
 _network_zeroconf: Zeroconf | None = None
 _network_service: ServiceInfo | None = None
@@ -120,6 +125,23 @@ def _build_logger() -> logging.Logger:
 
 
 logger = _build_logger()
+
+
+def get_keras_custom_objects() -> dict[str, Any]:
+    """Return custom layer patches required for legacy Keras exports."""
+
+    global KERAS_CUSTOM_OBJECTS
+    if KERAS_CUSTOM_OBJECTS is None:
+
+        class DepthwiseConv2DCompat(tf.keras.layers.DepthwiseConv2D):
+            """DepthwiseConv2D that ignores the legacy 'groups' argument."""
+
+            def __init__(self, *args: Any, groups: int | None = None, **kwargs: Any) -> None:
+                kwargs.pop("groups", None)
+                super().__init__(*args, **kwargs)
+
+        KERAS_CUSTOM_OBJECTS = {"DepthwiseConv2D": DepthwiseConv2DCompat}
+    return KERAS_CUSTOM_OBJECTS
 
 
 @dataclass
@@ -817,6 +839,18 @@ def disable_network_mode() -> Dict[str, Any]:
 _network_runtime_config = load_network_config_from_disk()
 _app_settings = load_app_settings()
 
+
+def prime_default_teachable_model() -> None:
+    """Warm the default model once during startup for faster ML-only calls."""
+
+    try:
+        entry = resolve_model_entry(_app_settings.get("default_model_id"))
+        ensure_model_ready(entry)
+    except HTTPException as exc:
+        logger.info("Kein Default-Modell zum Vorwärmen verfügbar: %s", exc.detail)
+    except Exception as exc:  # pragma: no cover - depends on filesystem state
+        logger.warning("Default-Modell konnte nicht vorgewärmt werden: %s", exc)
+
 class GPTMeta(BaseModel):
     model: str
     success: bool
@@ -859,14 +893,126 @@ def build_unique_model_dir(slug: str) -> Path:
     return candidate
 
 
-def find_model_root(temp_root: Path) -> Path:
-    if all((temp_root / required).is_file() for required in REQUIRED_TM_FILES):
-        return temp_root
-    for metadata_file in temp_root.rglob("metadata.json"):
-        candidate = metadata_file.parent
-        if all((candidate / required).is_file() for required in REQUIRED_TM_FILES):
-            return candidate
+def _files_in_directory(directory: Path) -> Dict[str, Path]:
+    files: Dict[str, Path] = {}
+    try:
+        for child in directory.iterdir():
+            if child.is_file():
+                files[child.name.lower()] = child
+    except FileNotFoundError:
+        return {}
+    return files
+
+
+def _find_casefold_file(directory: Path, filename: str) -> Optional[Path]:
+    target = filename.lower()
+    return _files_in_directory(directory).get(target)
+
+
+def _collect_keras_candidates(directory: Path, recursive: bool = False) -> List[Path]:
+    """Return candidate Keras artifacts inside *directory* respecting casing."""
+
+    candidates: List[Path] = []
+    try:
+        iterator = directory.rglob("*") if recursive else directory.iterdir()
+    except FileNotFoundError:
+        return candidates
+
+    for item in iterator:
+        if not item.is_file():
+            continue
+        if item.suffix.lower() in KERAS_SUFFIXES:
+            candidates.append(item)
+    return candidates
+
+
+def _detect_bundle(candidate: Path) -> Optional[tuple[Path, str]]:
+    if not candidate.is_dir():
+        return None
+    files_map = _files_in_directory(candidate)
+    if all(req in files_map for req in TFJS_REQUIRED_FILES_LOWER):
+        return candidate, "tfjs"
+    keras_candidates = _collect_keras_candidates(candidate)
+    if keras_candidates:
+        return candidate, "keras_h5"
+    if "saved_model.pb" in files_map:
+        return candidate, "savedmodel"
+    return None
+
+
+def find_model_root(temp_root: Path) -> tuple[Path, str]:
+    detected = _detect_bundle(temp_root)
+    if detected:
+        return detected
+    for candidate in temp_root.rglob("*"):
+        if not candidate.is_dir():
+            continue
+        detected = _detect_bundle(candidate)
+        if detected:
+            return detected
+
     raise HTTPException(status_code=400, detail="ZIP enthält kein gültiges Teachable Machine Modell.")
+
+
+def _candidate_directories(content_root: Path) -> List[Path]:
+    directories = [content_root]
+    parent = content_root.parent
+    if parent != content_root:
+        directories.append(parent)
+    return directories
+
+
+def load_bundle_metadata(content_root: Path, bundle_type: str) -> Dict[str, Any]:
+    """Extract metadata/labels for any supported Teachable Machine bundle."""
+
+    metadata: Dict[str, Any] | None = None
+    metadata_error: Exception | None = None
+    for directory in _candidate_directories(content_root):
+        metadata_file = _find_casefold_file(directory, "metadata.json")
+        if not metadata_file:
+            continue
+        try:
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+            break
+        except json.JSONDecodeError as exc:
+            metadata_error = exc
+            continue
+
+    if bundle_type == "tfjs" and metadata is None:
+        if metadata_error:
+            raise HTTPException(status_code=400, detail="metadata.json ist nicht gültig JSON.") from metadata_error
+        raise HTTPException(status_code=400, detail="metadata.json fehlt im TFJS Export.")
+
+    labels: List[str] | None = None
+    if isinstance(metadata, dict):
+        raw_labels = metadata.get("labels")
+        if isinstance(raw_labels, list):
+            normalized = [str(label).strip() for label in raw_labels if str(label).strip()]
+            if normalized:
+                labels = normalized
+
+    for directory in _candidate_directories(content_root):
+        labels_file = _find_casefold_file(directory, KERAS_LABEL_FILE)
+        if not labels_file:
+            continue
+        raw = labels_file.read_text(encoding="utf-8")
+        parsed = [line.strip() for line in raw.splitlines() if line.strip()]
+        if parsed:
+            labels = parsed
+            break
+
+    if not labels:
+        raise HTTPException(
+            status_code=400,
+            detail="labels.txt oder Labels innerhalb der metadata.json werden benötigt.",
+        )
+
+    metadata = metadata or {}
+    metadata["labels"] = labels
+    metadata.setdefault("format", bundle_type)
+    metadata.setdefault("source", "teachable_bundle")
+    metadata.setdefault("generated", datetime.utcnow().isoformat() + "Z")
+    return metadata
 
 
 def list_tm_models() -> List[Dict[str, Any]]:
@@ -900,15 +1046,165 @@ def set_default_tm_model(model_id: str | None) -> Optional[Dict[str, Any]]:
     return entry
 
 
-def load_tf_model(model_path: Path) -> tf.keras.Model:
-    """Load and cache a Teachable Machine TensorFlow model."""
+class SavedModelWrapper:
+    """Thin wrapper that exposes predict() for TensorFlow SavedModels."""
+
+    def __init__(self, model_path: Path) -> None:
+        imported = tf.saved_model.load(str(model_path))
+        signature = imported.signatures.get("serving_default")
+        if signature is None and imported.signatures:
+            # Fall back to the first available signature if serving_default is missing.
+            signature = next(iter(imported.signatures.values()))
+        if signature is None:
+            raise RuntimeError("SavedModel enthält keinen validen serving_default-Endpunkt.")
+        self._signature = signature
+        _, kwargs = signature.structured_input_signature
+        if not kwargs:
+            raise RuntimeError("SavedModel Eingabesignatur ist leer.")
+        self._input_spec = next(iter(kwargs.values()))
+        self.input_shape = tuple(self._input_spec.shape)
+        self.dtype = self._input_spec.dtype or tf.float32
+
+    def predict(self, batch: np.ndarray, verbose: int = 0) -> np.ndarray:
+        tensor = tf.convert_to_tensor(batch, dtype=self.dtype)
+        outputs = self._signature(tensor)
+        if isinstance(outputs, dict):
+            first = next(iter(outputs.values()))
+        else:
+            first = outputs
+        return first.numpy()
+
+
+def _discover_model_artifact(model_path: Path) -> tuple[str, Path]:
+    """Return (type, path) tuple for the first usable artifact under model_path."""
+
+    if model_path.is_file():
+        suffix = model_path.suffix.lower()
+        if suffix in KERAS_SUFFIXES:
+            return ("keras", model_path)
+        raise RuntimeError(
+            "Unbekanntes Modellformat. Bitte ein .keras oder .h5 Modell bereitstellen oder ein SavedModel-Verzeichnis nutzen."
+        )
+
+    if not model_path.exists():
+        raise RuntimeError(f"Model directory '{model_path}' not found.")
+
+    saved_model_file = model_path / "saved_model.pb"
+    if saved_model_file.is_file():
+        return ("savedmodel", model_path)
+
+    for nested_saved_model in model_path.rglob("saved_model.pb"):
+        return ("savedmodel", nested_saved_model.parent)
+
+    keras_candidates = _collect_keras_candidates(model_path)
+    if not keras_candidates:
+        keras_candidates = _collect_keras_candidates(model_path, recursive=True)
+
+    if keras_candidates:
+        keras_candidates.sort()
+        return ("keras", keras_candidates[0])
+
+    raise RuntimeError(
+        "Modellordner enthält weder ein SavedModel noch eine .keras/.h5 Datei. Bitte Export überprüfen."
+    )
+
+
+def has_tfjs_bundle(model_dir: Path) -> bool:
+    """Return True when the TFJS trio from Teachable Machine is still present."""
+
+    files_map = _files_in_directory(model_dir)
+    return all(required in files_map for required in TFJS_REQUIRED_FILES_LOWER)
+
+
+def convert_tfjs_bundle(model_dir: Path) -> Path:
+    """Convert a TFJS export into a SavedModel directory via tensorflowjs."""
+
+    tfjs_model = _find_casefold_file(model_dir, "model.json")
+    weights_file = _find_casefold_file(model_dir, "weights.bin")
+    if tfjs_model is None or weights_file is None:
+        raise RuntimeError("TFJS Export ist unvollständig (model.json/weights.bin fehlen).")
+
+    converted_dir = model_dir / "converted-savedmodel"
+    if converted_dir.exists():
+        shutil.rmtree(converted_dir)
+    converted_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "tensorflowjs.converters.converter",
+        "--input_format=tfjs_layers_model",
+        "--output_format=tf_saved_model",
+        str(tfjs_model),
+        str(converted_dir),
+    ]
+    try:
+        completed = subprocess.run(  # noqa: S603 - intentional CLI call
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        logger.info("TFJS Modell nach SavedModel konvertiert: %s", model_dir)
+        if completed.stdout:
+            logger.debug("tensorflowjs stdout: %s", completed.stdout.strip())
+        if completed.stderr:
+            logger.debug("tensorflowjs stderr: %s", completed.stderr.strip())
+    except FileNotFoundError as exc:  # pragma: no cover - depends on environment
+        raise RuntimeError(
+            "tensorflowjs ist nicht installiert. Bitte 'pip install tensorflowjs' ausführen."
+        ) from exc
+    except subprocess.CalledProcessError as exc:  # pragma: no cover - converter errors
+        raise RuntimeError(
+            f"TFJS Konvertierung schlug fehl: {exc.stderr or exc.stdout or exc}"
+        ) from exc
+
+    return converted_dir
+
+
+def ensure_model_artifact(model_path: Path) -> tuple[str, Path]:
+    """Ensure we can find or build a loadable artifact for the given model."""
+
+    try:
+        return _discover_model_artifact(model_path)
+    except RuntimeError as original_error:
+        if has_tfjs_bundle(model_path):
+            convert_tfjs_bundle(model_path)
+            return _discover_model_artifact(model_path)
+        raise original_error
+
+
+def load_tf_model(model_path: Path) -> Any:
+    """Load and cache Teachable Machine models across formats."""
+
     resolved = str(model_path.resolve())
     model = _model_cache.get(resolved)
-    if model is None:
-        if not model_path.is_dir():
-            raise RuntimeError(f"Model directory '{model_path}' not found.")
-        model = tf.keras.models.load_model(model_path)
-        _model_cache[resolved] = model
+    if model is not None:
+        return model
+
+    artifact_type, artifact_path = ensure_model_artifact(model_path)
+    if artifact_type == "savedmodel":
+        model = SavedModelWrapper(artifact_path)
+    else:
+        custom_objects = get_keras_custom_objects()
+        try:
+            with tf.keras.utils.custom_object_scope(custom_objects):
+                model = tf.keras.models.load_model(artifact_path)
+        except ValueError as exc:
+            saved_model_file = artifact_path / "saved_model.pb"
+            if saved_model_file.is_file():
+                logger.info(
+                    "Keras load_model() schlug fehl (%s). Fallback auf SavedModelWrapper.",
+                    exc,
+                )
+                model = SavedModelWrapper(artifact_path)
+            else:
+                raise RuntimeError(
+                    f"Keras Modell '{artifact_path}' konnte nicht geladen werden: {exc}"
+                ) from exc
+
+    _model_cache[resolved] = model
+    logger.info("Teachable Machine Modell geladen: %s (Quelle: %s)", resolved, artifact_type)
     return model
 
 
@@ -928,11 +1224,63 @@ def preprocess_image(image_bytes: bytes, input_shape: Sequence[int]) -> np.ndarr
     image = Image.open(image_stream).convert("RGB")
     if len(input_shape) < 3:
         raise HTTPException(status_code=500, detail="Unexpected model input shape.")
-    height, width = int(input_shape[1]), int(input_shape[2])
+    height = int(input_shape[1] or 224)
+    width = int(input_shape[2] or 224)
     image = image.resize((width, height))
     image_array = np.asarray(image).astype("float32") / 255.0  # Normalize to [0, 1]
     image_array = np.expand_dims(image_array, axis=0)  # Batch dimension
     return image_array
+
+
+def extract_input_shape(model: Any) -> Sequence[int]:
+    """Return a normalized input shape tuple for the loaded model."""
+
+    input_shape = getattr(model, "input_shape", None)
+    if isinstance(input_shape, list):
+        input_shape = input_shape[0]
+    if hasattr(input_shape, "as_list"):
+        input_shape = tuple(input_shape.as_list())
+    if isinstance(input_shape, tuple):
+        return input_shape
+    raise HTTPException(status_code=500, detail="Modell liefert keine Input-Shape zurück.")
+
+
+def warmup_teachable_model(model: Any, model_entry: Dict[str, Any]) -> None:
+    """Run a dummy inference once so the model is initialized."""
+
+    if getattr(model, "_opencore_warmed", False):
+        return
+    try:
+        input_shape = extract_input_shape(model)
+        if len(input_shape) < 4:
+            return
+        height = int(input_shape[1] or 224)
+        width = int(input_shape[2] or 224)
+        channels = int(input_shape[3] or 3)
+        dummy = np.zeros((1, height, width, channels), dtype="float32")
+        model.predict(dummy, verbose=0)
+        setattr(model, "_opencore_warmed", True)
+        logger.info(
+            "ML-Modell '%s' initialisiert (%sx%s, %s Kanäle).",
+            model_entry.get("name"),
+            height,
+            width,
+            channels,
+        )
+    except Exception as exc:  # pragma: no cover - depends on model internals
+        logger.warning(
+            "Warmup für Modell %s fehlgeschlagen: %s",
+            model_entry.get("name"),
+            exc,
+        )
+
+
+def ensure_model_ready(model_entry: Dict[str, Any]) -> Any:
+    """Load (and warm) the TensorFlow model for the current request."""
+
+    model = load_tf_model(model_entry["path"])
+    warmup_teachable_model(model, model_entry)
+    return model
 
 
 def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
@@ -952,7 +1300,7 @@ def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
 
     if candidate:
         model_path = (BASE_DIR / candidate["path"]).resolve()
-        if not model_path.is_dir():
+        if not model_path.exists():
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -974,7 +1322,7 @@ def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
         }
 
     model_path = Path(MODEL_PATH)
-    if not model_path.is_dir():
+    if not model_path.exists():
         raise HTTPException(
             status_code=400,
             detail=(
@@ -991,16 +1339,17 @@ def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
     }
 
 
+prime_default_teachable_model()
+
+
 def classify_image(image_bytes: bytes, model_entry: Dict[str, Any]) -> Dict[str, Any]:
     """Run the Teachable Machine model on the provided image bytes."""
     try:
-        model = load_tf_model(model_entry["path"])
+        model = ensure_model_ready(model_entry)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    input_shape = model.input_shape
-    if isinstance(input_shape, list):  # Some TF models have list of input shapes
-        input_shape = input_shape[0]
+    input_shape = extract_input_shape(model)
     preprocessed = preprocess_image(image_bytes, input_shape)
     predictions = model.predict(preprocessed, verbose=0)[0]
     predictions = predictions.tolist()
@@ -1173,7 +1522,7 @@ async def tm_models() -> JSONResponse:
         {
             "models": list_tm_models(),
             "default_model_id": _app_settings.get("default_model_id"),
-            "has_builtin": Path(MODEL_PATH).is_dir(),
+            "has_builtin": Path(MODEL_PATH).exists(),
         }
     )
 
@@ -1218,22 +1567,16 @@ async def upload_tm_model(
         with zipfile.ZipFile(io.BytesIO(data)) as archive, tempfile.TemporaryDirectory() as tmp_dir:
             archive.extractall(tmp_dir)
             temp_root = Path(tmp_dir)
-            content_root = find_model_root(temp_root)
-            missing = [req for req in REQUIRED_TM_FILES if not (content_root / req).is_file()]
-            if missing:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Datei unvollständig. Folgende Bestandteile fehlen: {', '.join(missing)}.",
-                )
-
-            metadata_raw = (content_root / "metadata.json").read_text(encoding="utf-8")
-            try:
-                metadata_data = json.loads(metadata_raw)
-            except json.JSONDecodeError as exc:  # pragma: no cover - depends on uploads
-                raise HTTPException(status_code=400, detail="metadata.json ist nicht gültig JSON.") from exc
+            content_root, bundle_type = find_model_root(temp_root)
+            metadata_data = load_bundle_metadata(content_root, bundle_type)
             slug = slugify(display_name)
             target_dir = build_unique_model_dir(slug)
             shutil.copytree(content_root, target_dir)
+            try:
+                ensure_model_artifact(target_dir)
+            except RuntimeError as exc:
+                shutil.rmtree(target_dir, ignore_errors=True)
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
     except zipfile.BadZipFile as exc:  # pragma: no cover - depends on user uploads
         raise HTTPException(status_code=400, detail="Ungültige ZIP-Datei.") from exc
 

@@ -55,13 +55,27 @@
         <li>Exportiere als "TensorFlow → Keras" ZIP-Paket.</li>
         <li>Lade das ZIP im Config-Hub (<code>/config</code>) hoch. Der Server entpackt automatisch nach <code>TM-models/&lt;slug&gt;/</code> und schreibt den Eintrag in <code>TM-models/registry.json</code>.</li>
       </ol>
-      <p>Jedes Paket muss folgende Struktur besitzen:</p>
+      <p>OPENCORE akzeptiert zwei Paketvarianten:</p>
+      <h3>TFJS-Bundle</h3>
       <pre><code>metadata.json
 model.json
 weights.bin</code></pre>
       <p>
         In <code>metadata.json</code> sollten die Klassennamen ("labels") gepflegt sein. Fehlen Einträge, erzeugt OPENCORE neutrale Namen
         (class_1 …). Nach dem Upload kann das Modell direkt als Default gesetzt und im Analyzer ausgewählt werden.
+      </p>
+      <h3>Keras (.h5) Bundle</h3>
+      <pre><code>keras_model.h5
+labels.txt
+[optional] metadata.json</code></pre>
+      <p>
+        Die Datei <code>labels.txt</code> enthält pro Zeile eine Klasse. Optional kann ein begleitendes <code>metadata.json</code> ergänzt werden;
+        OPENCORE liest Labels dann bevorzugt daraus. Fehlen Metadaten, erzeugt der Upload automatisch ein Minimal-Schema inkl. Zeitstempel.
+      </p>
+      <p>
+        Der Server erkennt TFJS-Exports automatisch und konvertiert sie mit <code>tensorflowjs</code> in ein TensorFlow SavedModel.
+        Scheitert die Konvertierung (fehlende Dateien oder defekte ZIP), bricht der Upload mit einer klaren Fehlermeldung ab. Es sind keine
+        manuellen CLI-Schritte nötig.
       </p>
     </section>
 

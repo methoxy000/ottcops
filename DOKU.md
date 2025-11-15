@@ -23,9 +23,9 @@ Modelle vorbereitet werden und wie die Umgebung zu konfigurieren ist.
    ```
 
 ## 3. Modelle & Labels
-- Primärer Ablageort ist `TM-models/`. Das Upload-Feature entpackt ZIPs (mit `metadata.json`, `model.json`, `weights.bin`) in einen Unterordner und schreibt zusätzlich einen Eintrag in `TM-models/registry.json`.
+- Primärer Ablageort ist `TM-models/`. Das Upload-Feature entpackt ZIPs (entweder TFJS-Bundles mit `metadata.json`, `model.json`, `weights.bin` **oder** Keras-Pakete mit `keras_model.h5` und `labels.txt`) in einen Unterordner und schreibt zusätzlich einen Eintrag in `TM-models/registry.json`.
 - Falls kein Eintrag aktiv ist, nutzt der Analyzer `TEACHABLE_MODEL_PATH` (z. B. `./models/teachable_model`).
-- Labels werden automatisch aus `metadata.json` gelesen. Fehlen Daten, erzeugt der Service neutrale Bezeichner (`class_1`, `class_2`, …).
+- Labels werden automatisch aus `metadata.json` oder – bei Keras-Paketen – aus `labels.txt` gelesen. Fehlen Daten, erzeugt der Service neutrale Bezeichner (`class_1`, `class_2`, …).
 
 ## 4. Konfiguration
 | Variable | Beschreibung |
@@ -85,3 +85,4 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 - OTTCOUTURE behält sämtliche Rechte am Markennamen und Branding.
 - Änderungen oder Erweiterungen müssen offen bleiben, wieder unter der AGPL
   veröffentlicht werden und eine eindeutige Attribution an OTTCOUTURE enthalten.
+- Nutzungshinweis: Der OPENCORE Analyzer ist ausschließlich für private Einzelnutzer:innen sowie Developer:innen zu Testzwecken vorgesehen. Cannabis Social Clubs (CSCs) und Unternehmen müssen vor jeglicher kommerzieller Verwendung eine Lizenz direkt bei **ottcouture.eu** (otcdmin@outlook.com) einholen.

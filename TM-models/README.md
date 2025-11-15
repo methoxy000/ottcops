@@ -1,10 +1,9 @@
 # OTTCOUTURE TM Slots
 
-Hier landen alle hochgeladenen Teachable-Machine-ZIPs aus dem Konfigurator (`/config`). Jede ZIP muss folgende Dateien enthalten:
+Hier landen alle hochgeladenen Teachable-Machine-ZIPs aus dem Konfigurator (`/config`). Jede ZIP muss entweder ein TFJS-Paket oder ein Keras-Paket enthalten:
 
-- `metadata.json`
-- `model.json`
-- `weights.bin`
+- **TFJS:** `metadata.json`, `model.json`, `weights.bin`
+- **Keras:** `keras_model.h5`, `labels.txt` (optional zusätzlich `metadata.json`)
 
 Wir legen das entpackte Modell in einem eigenen Unterordner (Slug des angegebenen Namens) ab und dokumentieren es zusätzlich in `registry.json`. Über die Config-Seite lässt sich jedes Modell als Standard markieren (wir speichern die Auswahl serverseitig, damit der Analyzer automatisch darauf zugreift).
 
