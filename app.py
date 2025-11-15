@@ -71,7 +71,8 @@ TM_MODELS_DIR = BASE_DIR / "TM-models"
 TM_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 TM_REGISTRY_PATH = TM_MODELS_DIR / "registry.json"
 TFJS_REQUIRED_FILES = {"metadata.json", "model.json", "weights.bin"}
-KERAS_BUNDLE_FILES = {"keras_model.h5", "labels.txt"}
+TFJS_REQUIRED_FILES_LOWER = {name.lower() for name in TFJS_REQUIRED_FILES}
+KERAS_LABEL_FILE = "labels.txt"
 NETWORK_CONFIG_FILENAME = "network-config.json"
 SETTINGS_PATH = BASE_DIR / "app-settings.json"
 DOCS_DIR = BASE_DIR / "doc"
@@ -873,27 +874,113 @@ def build_unique_model_dir(slug: str) -> Path:
     return candidate
 
 
-def _has_required_files(candidate: Path, required_files: set[str]) -> bool:
-    return all((candidate / required).is_file() for required in required_files)
+def _files_in_directory(directory: Path) -> Dict[str, Path]:
+    files: Dict[str, Path] = {}
+    try:
+        for child in directory.iterdir():
+            if child.is_file():
+                files[child.name.lower()] = child
+    except FileNotFoundError:
+        return {}
+    return files
+
+
+def _find_casefold_file(directory: Path, filename: str) -> Optional[Path]:
+    target = filename.lower()
+    return _files_in_directory(directory).get(target)
+
+
+def _detect_bundle(candidate: Path) -> Optional[tuple[Path, str]]:
+    if not candidate.is_dir():
+        return None
+    files_map = _files_in_directory(candidate)
+    if all(req in files_map for req in TFJS_REQUIRED_FILES_LOWER):
+        return candidate, "tfjs"
+    keras_candidates = [
+        path
+        for path in files_map.values()
+        if path.suffix.lower() in {".h5", ".keras"}
+    ]
+    if keras_candidates:
+        return candidate, "keras_h5"
+    if "saved_model.pb" in files_map:
+        return candidate, "savedmodel"
+    return None
 
 
 def find_model_root(temp_root: Path) -> tuple[Path, str]:
-    if _has_required_files(temp_root, TFJS_REQUIRED_FILES):
-        return temp_root, "tfjs"
-    if _has_required_files(temp_root, KERAS_BUNDLE_FILES):
-        return temp_root, "keras_h5"
-
-    for metadata_file in temp_root.rglob("metadata.json"):
-        candidate = metadata_file.parent
-        if _has_required_files(candidate, TFJS_REQUIRED_FILES):
-            return candidate, "tfjs"
-
-    for keras_file in temp_root.rglob("keras_model.h5"):
-        candidate = keras_file.parent
-        if _has_required_files(candidate, KERAS_BUNDLE_FILES):
-            return candidate, "keras_h5"
+    detected = _detect_bundle(temp_root)
+    if detected:
+        return detected
+    for candidate in temp_root.rglob("*"):
+        if not candidate.is_dir():
+            continue
+        detected = _detect_bundle(candidate)
+        if detected:
+            return detected
 
     raise HTTPException(status_code=400, detail="ZIP enthält kein gültiges Teachable Machine Modell.")
+
+
+def _candidate_directories(content_root: Path) -> List[Path]:
+    directories = [content_root]
+    parent = content_root.parent
+    if parent != content_root:
+        directories.append(parent)
+    return directories
+
+
+def load_bundle_metadata(content_root: Path, bundle_type: str) -> Dict[str, Any]:
+    """Extract metadata/labels for any supported Teachable Machine bundle."""
+
+    metadata: Dict[str, Any] | None = None
+    metadata_error: Exception | None = None
+    for directory in _candidate_directories(content_root):
+        metadata_file = _find_casefold_file(directory, "metadata.json")
+        if not metadata_file:
+            continue
+        try:
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+            break
+        except json.JSONDecodeError as exc:
+            metadata_error = exc
+            continue
+
+    if bundle_type == "tfjs" and metadata is None:
+        if metadata_error:
+            raise HTTPException(status_code=400, detail="metadata.json ist nicht gültig JSON.") from metadata_error
+        raise HTTPException(status_code=400, detail="metadata.json fehlt im TFJS Export.")
+
+    labels: List[str] | None = None
+    if isinstance(metadata, dict):
+        raw_labels = metadata.get("labels")
+        if isinstance(raw_labels, list):
+            normalized = [str(label).strip() for label in raw_labels if str(label).strip()]
+            if normalized:
+                labels = normalized
+
+    for directory in _candidate_directories(content_root):
+        labels_file = _find_casefold_file(directory, KERAS_LABEL_FILE)
+        if not labels_file:
+            continue
+        raw = labels_file.read_text(encoding="utf-8")
+        parsed = [line.strip() for line in raw.splitlines() if line.strip()]
+        if parsed:
+            labels = parsed
+            break
+
+    if not labels:
+        raise HTTPException(
+            status_code=400,
+            detail="labels.txt oder Labels innerhalb der metadata.json werden benötigt.",
+        )
+
+    metadata = metadata or {}
+    metadata["labels"] = labels
+    metadata.setdefault("format", bundle_type)
+    metadata.setdefault("source", "teachable_bundle")
+    metadata.setdefault("generated", datetime.utcnow().isoformat() + "Z")
+    return metadata
 
 
 def list_tm_models() -> List[Dict[str, Any]]:
@@ -993,15 +1080,16 @@ def _discover_model_artifact(model_path: Path) -> tuple[str, Path]:
 def has_tfjs_bundle(model_dir: Path) -> bool:
     """Return True when the TFJS trio from Teachable Machine is still present."""
 
-    return all((model_dir / name).is_file() for name in TFJS_REQUIRED_FILES)
+    files_map = _files_in_directory(model_dir)
+    return all(required in files_map for required in TFJS_REQUIRED_FILES_LOWER)
 
 
 def convert_tfjs_bundle(model_dir: Path) -> Path:
     """Convert a TFJS export into a SavedModel directory via tensorflowjs."""
 
-    tfjs_model = model_dir / "model.json"
-    weights_file = model_dir / "weights.bin"
-    if not tfjs_model.is_file() or not weights_file.is_file():
+    tfjs_model = _find_casefold_file(model_dir, "model.json")
+    weights_file = _find_casefold_file(model_dir, "weights.bin")
+    if tfjs_model is None or weights_file is None:
         raise RuntimeError("TFJS Export ist unvollständig (model.json/weights.bin fehlen).")
 
     converted_dir = model_dir / "converted-savedmodel"
@@ -1446,41 +1534,7 @@ async def upload_tm_model(
             archive.extractall(tmp_dir)
             temp_root = Path(tmp_dir)
             content_root, bundle_type = find_model_root(temp_root)
-            if bundle_type == "tfjs":
-                missing = [req for req in TFJS_REQUIRED_FILES if not (content_root / req).is_file()]
-                if missing:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Datei unvollständig. Folgende Bestandteile fehlen: {', '.join(missing)}.",
-                    )
-                metadata_raw = (content_root / "metadata.json").read_text(encoding="utf-8")
-                try:
-                    metadata_data = json.loads(metadata_raw)
-                except json.JSONDecodeError as exc:  # pragma: no cover - depends on uploads
-                    raise HTTPException(status_code=400, detail="metadata.json ist nicht gültig JSON.") from exc
-            else:
-                labels_path = content_root / "labels.txt"
-                try:
-                    labels_raw = labels_path.read_text(encoding="utf-8")
-                except FileNotFoundError as exc:
-                    raise HTTPException(status_code=400, detail="labels.txt fehlt im ZIP.") from exc
-                labels = [line.strip() for line in labels_raw.splitlines() if line.strip()]
-                if not labels:
-                    raise HTTPException(status_code=400, detail="labels.txt enthält keine Klassenbezeichnungen.")
-
-                metadata_data = None
-                metadata_path = content_root / "metadata.json"
-                if metadata_path.is_file():
-                    try:
-                        metadata_data = json.loads(metadata_path.read_text(encoding="utf-8"))
-                    except json.JSONDecodeError:
-                        metadata_data = None
-
-                metadata_data = metadata_data or {}
-                metadata_data.setdefault("labels", labels)
-                metadata_data.setdefault("format", "keras_h5")
-                metadata_data.setdefault("source", "keras_model_bundle")
-                metadata_data.setdefault("generated", datetime.utcnow().isoformat() + "Z")
+            metadata_data = load_bundle_metadata(content_root, bundle_type)
             slug = slugify(display_name)
             target_dir = build_unique_model_dir(slug)
             shutil.copytree(content_root, target_dir)
