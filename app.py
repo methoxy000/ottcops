@@ -124,6 +124,12 @@ _stream_lock = threading.Lock()
 
 logger = build_logger()
 
+app = FastAPI(title="OPENCORE Analyzer")
+
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/doc", StaticFiles(directory=DOCS_DIR, html=True), name="doc")
+app.mount("/share-store", StaticFiles(directory=SHARE_STORE_DIR), name="share-store")
+
 
 def get_keras_custom_objects() -> dict[str, Any]:
     """Return custom layer patches required for legacy Keras exports."""
