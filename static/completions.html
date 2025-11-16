@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>OTTO · OTTCOUTURE Grow Chat</title>
@@ -124,59 +124,56 @@
       <p style="text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.85rem; color: var(--accent)">
         OTTCOUTURE.EU · OTTO SERVICE
       </p>
-      <h1>OTTO · Grow Fragen im OPENCORE Stack</h1>
-      <p>
-        OTTO beantwortet kultivierungsrelevante Fragen mit demselben Vision-/LLM-Setup wie der Analyzer. Antworten sind klar,
-        strukturiert und verzichten auf medizinische Aussagen.
-      </p>
-      <p>
-        Der Chat verwendet automatisch die im Config Hub gespeicherten Provider-Einstellungen (Base-URL, Modell, Token). Änderungen
-        unter <a href="/config" style="color: var(--accent)">/config</a> gelten somit für Analyzer, Batch-/Stream-Läufe und OTTO.
-      </p>
-      <p>
-        Rechte & Betrieb: <strong>ottcouture.eu</strong>. Support via <strong>otcdmin@outlook.com</strong>, Instagram
-        <strong>@ottcouture.eu</strong> oder Discord
-        <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">discord.gg/GMMSqePfPh</a>.
-      </p>
-      <div class="actions">
-        <a href="/">Zur Analyse</a>
-        <a href="/config" style="background: rgba(255, 255, 255, 0.2); color: #fff">Konfiguration öffnen</a>
-      </div>
-    </header>
-    <main>
-      <section class="card">
-        <h2>1. Anfrage an OTTO</h2>
+        <h1>OTTO · Grow questions in the OPENCORE stack</h1>
         <p>
-          Beschreibe kurz das Setup oder die Fragestellung (z. B. Klima, Nährstoffe, Lichtplanung). OTTO liefert eine
-          strukturierte Antwort mit klaren Handlungsschritten.
+          OTTO answers cultivation questions with the same vision/LLM setup as the analyzer. Responses are clear, structured, and avoid medical claims.
         </p>
-        <form id="otto-form">
-          <label style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8)">
-            LLM-Profil für diese Session
-            <select id="otto-llm-profile" style="margin-top: 0.35rem; width: 100%; padding: 0.6rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff;">
-              <option value="">Aktives Server-Profil verwenden</option>
-            </select>
-          </label>
-          <textarea id="otto-input" placeholder="Z. B. Wie optimiere ich VPD bei 26 °C Raumtemperatur?" required></textarea>
-          <button type="submit">Antwort abrufen</button>
-        </form>
-      </section>
-      <section class="card">
-        <h2>2. Antwort</h2>
-        <pre id="otto-output">Bereit.</pre>
-      </section>
-      <section class="card">
-        <h2>Hinweise & Kontakt</h2>
         <p>
-          OTTO basiert auf dem OPENCORE Community Modell. Alle Ergebnisse sind technische Empfehlungen für Grow-Setups. Für
-          Feedback oder neue Modellvorschläge bitte <strong>otcdmin@outlook.com</strong>, Instagram
-          <strong>@ottcouture.eu</strong> oder Discord <strong>discord.gg/GMMSqePfPh</strong> nutzen.
+          The chat automatically uses the provider settings saved in the config hub (base URL, model, token). Changes in
+          <a href="/config" style="color: var(--accent)">/config</a> apply to Analyzer, batch/stream runs, and OTTO.
         </p>
-      </section>
-    </main>
-    <footer>
-      © <strong>OTTCOUTURE</strong> — Enterprise Tooling & OPENCORE Community Stack. Alle Rechte bei ottcouture.eu.
-    </footer>
+        <p>
+          Rights & operations: <strong>ottcouture.eu</strong>. Support via <strong>otcdmin@outlook.com</strong>, Instagram
+          <strong>@ottcouture.eu</strong> or Discord
+          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">discord.gg/GMMSqePfPh</a>.
+        </p>
+        <div class="actions">
+          <a href="/">Back to analyzer</a>
+          <a href="/config" style="background: rgba(255, 255, 255, 0.2); color: #fff">Open configuration</a>
+        </div>
+      </header>
+      <main>
+        <section class="card">
+          <h2>1. Ask OTTO</h2>
+          <p>
+            Briefly describe the setup or question (e.g., climate, nutrients, lighting). OTTO returns a structured response with clear action steps.
+          </p>
+          <form id="otto-form">
+            <label style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8)">
+              LLM profile for this session
+              <select id="otto-llm-profile" style="margin-top: 0.35rem; width: 100%; padding: 0.6rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff;">
+                <option value="">Use active server profile</option>
+              </select>
+            </label>
+            <textarea id="otto-input" placeholder="e.g., How do I optimize VPD at 26°C room temp?" required></textarea>
+            <button type="submit">Get answer</button>
+          </form>
+        </section>
+        <section class="card">
+          <h2>2. Response</h2>
+          <pre id="otto-output">Ready.</pre>
+        </section>
+        <section class="card">
+          <h2>Notes & contact</h2>
+          <p>
+            OTTO is based on the OPENCORE community model. All results are technical recommendations for grow setups. For feedback or new model suggestions contact <strong>otcdmin@outlook.com</strong>, Instagram
+            <strong>@ottcouture.eu</strong>, or Discord <strong>discord.gg/GMMSqePfPh</strong>.
+          </p>
+        </section>
+      </main>
+      <footer>
+        © <strong>OTTCOUTURE</strong> — enterprise tooling & OPENCORE community stack. All rights with ottcouture.eu.
+      </footer>
     <script>
       const form = document.getElementById("otto-form");
       const input = document.getElementById("otto-input");
@@ -191,7 +188,7 @@
           const data = await response.json();
           const profiles = data.profiles || [];
           const active = data.active_profile_id || "";
-          profileSelect.innerHTML = '<option value="">Aktives Server-Profil verwenden</option>';
+            profileSelect.innerHTML = '<option value="">Use active server profile</option>';
           profiles.forEach((profile) => {
             const option = document.createElement("option");
             option.value = profile.id;

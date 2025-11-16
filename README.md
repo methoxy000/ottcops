@@ -1,125 +1,124 @@
 # OTTCOUTURE Cannabis Vision OpenCore
 
-OTTCOPS ist der von [ottcouture.eu](https://ottcouture.eu) betriebene Analyzer für Cannabis-Vision. Er kombiniert Teachable-Machine-Modelle mit multimodalen LLMs und liefert strukturierte JSON-Outputs – sachlich, reproduzierbar und vollständig unter OTTCOUTURE-Rechten. Feedback oder neue Modelle gern an **otcdmin@outlook.com**, Instagram **@ottcouture.eu** oder Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
+The OTTCOPS analyzer from [ottcouture.eu](https://ottcouture.eu) combines Teachable Machine vision models with multimodal LLMs to produce structured JSON outputs. All branding and rights remain with ottcouture.eu; feedback or model submissions are welcome via **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, or Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
 
 ## Feature Highlights
-- 🌿 **FastAPI Core** mit Analyzer, Config Deck, OTTO-Chat (`/completions`) und dokumentierten `/tm-models*` Routen.
-- 🧠 **Vision LLM Switchboard** für OpenAI, Ollama oder LM Studio inkl. System-Presetverwaltung, Mehrfach-Profilen und serverseitiger Persistenz für Analyzer, Streams und OTTO.
-- 🧪 **Teachable-Machine-Depot** mit ZIP-Uploads (TFJS: metadata.json/model.json/weights.bin oder Keras: keras_model.h5 + labels.txt), Registry und Standardauswahl für den Analyzer.
-- 🧵 **Model Routing**: Das Frontend kann pro Analyse den gewünschten TM-Slot wählen; die Einstellung wird zusätzlich serverseitig in `app-settings.json` persistiert.
-- 🤖 **OTTO Grow Chat** – eigener Screen für kultivierungsrelevante Fragen mit definiertem System Prompt.
-- 📡 **WiFi Broadcast Mode** (mDNS/zeroconf) für Hostnamen wie `ottcolab.local` im gesamten WLAN.
-- 📝 **Prompt-Templates** inkl. lokaler Custom-Presets direkt im Analyzer.
-- 🗂️ **Batch-Analyse** mit `/api/opencore/analyze-batch`, Tabs pro Bild und Gesamt-Report.
-- 🛠️ **Debug-Panel** mit Request-ID, Modellversion und Timings (UI-Toggle + `?debug=1`).
-- 🔐 **API-Token-Mode**: Eigene Base-URL + Token, inkl. Code-Beispielen.
-- 📤 **Export-Paket**: JSON-Download, PDF-Report sowie Share-Links über `/api/opencore/share` + Viewer (`/share/<id>`).
-- 🧷 **ML-only Analysemodus**: `analysis_mode=ml` liefert reine Teachable-Machine-JSONs ohne GPT-Laufzeit.
-- 🎥 **Stream-Orchestrierung**: Snapshot/RTSP-Quellen laufen als Hintergrundjobs (5 s Capture, 30 s Batch) und liefern automatische Reports.
-- 🔄 **Launch-Update-Check**: Bei jedem Start prüft das Backend gegen `github.com/methoxy000/ottcops` und bietet ein optionales `git pull` an.
+- 🌿 **FastAPI core** with Analyzer UI, config deck, OTTO chat (`/completions`), and documented `/tm-models*` routes.
+- 🧠 **Vision LLM switchboard** for OpenAI, Ollama, or LM Studio with system prompt presets, multiple profiles, and server-side persistence for the Analyzer, Streams, and OTTO.
+- 🧪 **Teachable Machine depot** with ZIP uploads (TFJS: `metadata.json`/`model.json`/`weights.bin` or Keras: `keras_model.h5` + `labels.txt`), registry, and default selection for the Analyzer.
+- 🧵 **Model routing**: the frontend lets you pick a TM slot per run; the choice is persisted in `app-settings.json` for reuse.
+- 🤖 **OTTO grow chat** – dedicated screen for cultivation questions with a defined system prompt.
+- 📡 **WiFi broadcast mode** (mDNS/zeroconf) for hostnames like `ottcolab.local` across your LAN.
+- 📝 **Prompt templates** including locally saved custom presets directly in the Analyzer.
+- 🗂️ **Batch analysis** with `/api/opencore/analyze-batch`, tabs per image, and an overall report.
+- 🛠️ **Debug panel** with request ID, model version, and timings (UI toggle + `?debug=1`).
+- 🔐 **API token mode**: custom base URL + token with code samples.
+- 📤 **Export bundle**: JSON download, PDF report, and share links via `/api/opencore/share` + viewer (`/share/<id>`).
+- 🧷 **ML-only analysis mode**: `analysis_mode=ml` returns Teachable Machine JSON without GPT.
+- 🎥 **Stream orchestration**: snapshot/RTSP sources run as background jobs (5 s capture, 30 s batch) and produce automated reports.
+- 🔄 **Launch update check**: on start the backend compares against `github.com/ottco-dev/ottcops` and offers an optional `git pull`.
 
-## Nutzung & Lizenzpflicht
-- Der OPENCORE Analyzer darf ohne weitere Freigabe ausschließlich von privaten Einzelnutzer:innen und Developer:innen zu Test- und Forschungszwecken betrieben werden.
-- Cannabis Social Clubs (CSCs) und Unternehmen – egal ob Start-up, MSO oder Dienstleister – müssen vor Einsatz in kommerziellen Projekten direkt mit **ottcouture.eu** eine Lizenz vereinbaren.
-- Kontakt für Lizenzen & Partnerschaften: **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
+## Usage & Licensing
+- OPENCORE Analyzer is free to use only for private individuals and developer testing.
+- Cannabis Social Clubs (CSCs) and companies—startups, MSOs, or service providers—must obtain a commercial license directly from **ottcouture.eu** before using this in any production or revenue context.
+- Licensing & partnerships: **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
 
-## Installation im OTTCOUTURE Style
+## Installation (OTTCOUTURE style)
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# optional wenn du GPT Calls willst
+# optional if you want GPT calls
 export OPENAI_API_KEY="sk-..."
 
-# Dev-Server starten
+# start the dev server
 uvicorn app:app --reload
 ```
 
-Beim Start führt der Server automatisch einen Git-Vergleich gegen `https://github.com/methoxy000/ottcops`. Wird ein neuer Commit gefunden, erscheint eine Konsolenabfrage („Jetzt aktualisieren?“). Die Eingabe `y` oder `yes` startet ein `git pull`, jede andere Antwort lässt die vorhandene Version aktiv. Setze `OTTC_SKIP_UPDATE_CHECK=1`, wenn der Check z. B. in CI-Pipelines übersprungen werden soll.
+At startup the server automatically compares your checkout to `https://github.com/ottco-dev/ottcops`. If a newer commit exists you will be prompted in the console (“Update now?”). Reply `y` or `yes` to run `git pull`; any other response keeps the current version. Set `OTTC_SKIP_UPDATE_CHECK=1` to bypass this (e.g., in CI).
 
 1. Analyzer UI: `http://localhost:8000/`
-2. OTTO Grow Chat: `http://localhost:8000/completions`
-3. Config Hub inkl. TM-Depot: `http://localhost:8000/config`
-4. Discord Crew & Support: [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh)
-5. Dokumentation (HTML): `http://localhost:8000/doc/index.html`
+2. OTTO grow chat: `http://localhost:8000/completions`
+3. Config hub + TM depot: `http://localhost:8000/config`
+4. Discord crew & support: [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh)
+5. Documentation (HTML): `http://localhost:8000/doc/index.html`
 
-## Konfiguration
-| Variable | Pflicht | Default | Beschreibung |
+## Configuration
+| Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | bei OpenAI Flow | – | Key für GPT-4.1 mini oder dein bevorzugtes Vision Modell. |
-| `OPENAI_GPT_MODEL` | optional | `gpt-4.1-mini` | LLM-ID für Cloud Vision. |
-| `TEACHABLE_MODEL_PATH` | optional | `./models/teachable_model` | Alternativer Pfad zu einem Legacy-Teachable-Model. |
+| `OPENAI_API_KEY` | for OpenAI flow | – | Key for GPT-4.1 mini or your preferred vision model. |
+| `OPENAI_GPT_MODEL` | optional | `gpt-4.1-mini` | LLM ID for cloud vision. |
+| `TEACHABLE_MODEL_PATH` | optional | `./models/teachable_model` | Alternative path to a legacy Teachable model. |
 
-Die Provider-/LLM-Konfiguration aus dem Config Hub wird lokal (`localStorage.cannabisLLMConfig`) und serverseitig via `/api/settings/llm` gespeichert. Mehrere Profile lassen sich über `/api/settings/llm/profiles` anlegen, aktivieren oder löschen; die Auswahl erscheint im Analyzer, bei Streams und in OTTO. Gemeinsam mit dem Standard-Teachable-Machine-Modell landen die Werte in `app-settings.json`, damit Analyzer, Batch-/Stream-Endpunkte und der OTTO-Chat dieselbe Provider-Konfiguration verwenden und nach Neustarts synchron bleiben.
+Provider/LLM configuration from the config hub is stored locally (`localStorage.cannabisLLMConfig`) and server-side via `/api/settings/llm`. Multiple profiles can be created, activated, or deleted through `/api/settings/llm/profiles`; selections appear in the Analyzer, Streams, and OTTO. Together with the default Teachable Machine model, values are written to `app-settings.json` so Analyzer, batch/stream endpoints, and OTTO share the same provider settings and survive restarts.
 
-## WiFi Broadcast (ottcolab.local)
-1. Installiere die Requirements (wir shippen `zeroconf`, wichtig für mDNS). Falls du ein bestehendes Environment nutzt, führe `pip install zeroconf` aus.
-2. Starte `uvicorn app:app --host 0.0.0.0 --port 8000`, sodass der Server im WLAN erreichbar ist.
-3. Öffne `http://localhost:8000/config`, scrolle zum Abschnitt „WiFi Broadcast & ottcolab.local“.
-4. Hostname setzen (wir erzwingen `.local`) und den Port bestätigen, anschließend „Broadcast aktivieren“ anklicken.
-5. Jetzt sollten Smartphones, Tablets und Desktop-Geräte im selben Netzwerk `http://ottcolab.local:8000/` aufrufen können. Feedback bitte weiterhin an **otcdmin@outlook.com**, Instagram **@ottcouture.eu** oder [Discord](https://discord.gg/GMMSqePfPh).
+## WiFi broadcast (ottcolab.local)
+1. Install dependencies (`zeroconf` ships in `requirements.txt`; run `pip install zeroconf` if you reuse an existing environment).
+2. Start `uvicorn app:app --host 0.0.0.0 --port 8000` so the server is reachable on your LAN.
+3. Open `http://localhost:8000/config` and scroll to “WiFi Broadcast & ottcolab.local”.
+4. Set a hostname (we enforce `.local`) and confirm the port, then click “Enable broadcast”.
+5. Devices on the same network can reach `http://ottcolab.local:8000/`. Feedback still welcome at **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, or [Discord](https://discord.gg/GMMSqePfPh).
 
-## Teachable Machine Depot (`/TM-models`)
-1. Exportiere dein Google Teachable-Machine-Projekt als **TensorFlow** Paket (enthält `metadata.json`, `model.json`, `weights.bin`) oder als **Keras (.h5) Paket** mit `keras_model.h5` und `labels.txt`.
-2. Öffne `http://localhost:8000/config` und nutze den Abschnitt „OTTCOUTURE Teachable Machine Depot“.
-3. Nach dem Upload landet das Modell unter `/TM-models/<slug>` und wird in `TM-models/registry.json` geführt.
-4. Der Server wandelt TFJS-Exporte automatisch in ein TensorFlow SavedModel um (`tensorflowjs` wird hierzu clientseitig mitgeliefert). Fehlende Konverter oder defekte Bundles führen zu einer klaren Fehlermeldung.
-5. Die Listenansicht erlaubt pro Modell den Status „Standard im Analyzer“. Der Standard wird zusätzlich in `app-settings.json` notiert.
-6. Wird kein Community-Modell ausgewählt, greift der Analyzer auf `TEACHABLE_MODEL_PATH` (OPENCORE Referenz) zurück.
+## Teachable Machine depot (`/TM-models`)
+1. Export your Google Teachable Machine project as a **TensorFlow** bundle (`metadata.json`, `model.json`, `weights.bin`) or a **Keras (.h5) bundle** with `keras_model.h5` and `labels.txt`.
+2. Open `http://localhost:8000/config` and use the “OTTCOUTURE Teachable Machine Depot” section.
+3. After upload the model is stored under `/TM-models/<slug>` and registered in `TM-models/registry.json`.
+4. The server converts TFJS exports into a TensorFlow SavedModel (`tensorflowjs` is declared as a dependency). Missing converters or broken bundles return clear errors.
+5. The list view lets you mark any model as “Default in Analyzer”. The default is mirrored in `app-settings.json`.
+6. If no community model is selected, the Analyzer falls back to `TEACHABLE_MODEL_PATH` (OPENCORE reference).
 
-> Pflichtdateien: entweder `metadata.json`, `model.json`, `weights.bin` **oder** `keras_model.h5` plus `labels.txt`. Fehlen Bestandteile, lehnt der Upload ab.
+> Required files: either `metadata.json`, `model.json`, `weights.bin` **or** `keras_model.h5` plus `labels.txt`. Missing parts are rejected during upload.
 
-## API Routen
-- `GET /` – Analyzer Landing Page mit Modellauswahl
-- `GET /config` – Self-Host Konfigurator & TM-Depot
-- `GET /completions` – OTTO Grow Chat UI
-- `POST /analyze` – Bild + Prompt + optional `model_id` + `analysis_mode`
-- `POST /api/opencore/analyze-ml` – Alias für ML-only Calls (identisch zu `/analyze` mit `analysis_mode=ml`)
-- `POST /api/opencore/analyze-batch` – Multi-Bild-Analyse (FormData mit `files[]`)
-- `POST /api/opencore/share` & `GET /api/opencore/share/{id}` – JSON-Share-Service (`/share/{id}` liefert Viewer)
-- `POST /api/completions` – OTTO Chat Endpoint (`prompt` im JSON-Body)
-- `GET/POST/DELETE /api/opencore/streams*` – Verwaltung der Snapshot/Video-Streams inkl. Trigger-Endpoint
-- `GET /tm-models` – Registry + Defaultinformationen
-- `POST /tm-models/upload` – ZIP Upload (`file`, `model_type`, `display_name`)
-- `POST /tm-models/default/{model_id}` – setzt Standardmodell
-- `DELETE /tm-models/default` – entfernt Standardmodell
-- `GET/POST/DELETE /api/settings/llm` – persistiert Provider/Prompt-Konfigurationen im Backend
-- `GET /network/status`, `POST /network/announce`, `DELETE /network/announce` – mDNS Steuerung
+## API routes
+- `GET /` – Analyzer landing page with model selector
+- `GET /config` – self-host configurator & TM depot
+- `GET /completions` – OTTO grow chat UI
+- `POST /analyze` – image + prompt + optional `model_id` + `analysis_mode`
+- `POST /api/opencore/analyze-ml` – alias for ML-only calls (same as `/analyze` with `analysis_mode=ml`)
+- `POST /api/opencore/analyze-batch` – multi-image analysis (FormData with `files[]`)
+- `POST /api/opencore/share` & `GET /api/opencore/share/{id}` – JSON share service (`/share/{id}` serves the viewer)
+- `POST /api/completions` – OTTO chat endpoint (`prompt` in JSON body)
+- `GET/POST/DELETE /api/opencore/streams*` – manage snapshot/video streams including trigger endpoint
+- `GET /tm-models` – registry + default information
+- `POST /tm-models/upload` – ZIP upload (`file`, `model_type`, `display_name`)
+- `POST /tm-models/default/{model_id}` – set default model
+- `DELETE /tm-models/default` – clear default model
+- `GET/POST/DELETE /api/settings/llm` – persist provider/prompt configurations
+- `GET /network/status`, `POST /network/announce`, `DELETE /network/announce` – mDNS controls
 
-## Dokumentation im `/doc`-Verzeichnis
+## Documentation in `/doc`
+All feature guides ship as static HTML pages served by FastAPI under `/doc`:
 
-Alle geforderten Feature-Guides liegen als statische HTML-Seiten vor und werden über FastAPI unter `/doc` ausgeliefert:
+- `doc/prompts.html` – prompts & custom presets
+- `doc/batch.html` – batch analysis with API examples
+- `doc/debug.html` – debug panel
+- `doc/api_token_mode.html` – professional mode
+- `doc/ui.html` – UI extensions (drag & drop, theme, zoom, JSON fullscreen)
+- `doc/export.html` – JSON/PDF/share export
+- `doc/home_automation.html` – home-automation guide incl. curl, Python, Node-RED, Home Assistant
+- `doc/streams.html` – video & snapshot streams with API calls
+- `doc/models.html` – Teachable Machine (easy) and Label Studio/YOLO (pro) workflows
+- `doc/raspberry.html` – Raspberry Pi mounting, camera setup, and edge scripting
 
-- `doc/prompts.html` – Vorlagen & Custom-Presets
-- `doc/batch.html` – Batch-Analyse mit API-Beispielen
-- `doc/debug.html` – Debug-Panel
-- `doc/api_token_mode.html` – Professional Mode
-- `doc/ui.html` – UI-Erweiterungen (Drag&Drop, Theme, Zoom, JSON-Fullscreen)
-- `doc/export.html` – JSON/PDF/Share-Export
-- `doc/home_automation.html` – Home-Automation Guide inkl. curl, Python, Node-RED, Home Assistant
-- `doc/streams.html` – Video- & Snapshot-Streams inkl. API-Aufrufen
-- `doc/models.html` – Teachable-Machine (Easy) und Label-Studio/YOLO (Pro) Workflows
-- `doc/raspberry.html` – Raspberry-Pi-Montage, Kamera-Setup und Edge-Scripting
-
-## Projektstruktur
+## Project structure
 ```
 .
-├── app.py                # FastAPI Service + TM Depot + WiFi Broadcast + OTTO Endpoint
+├── app.py                # FastAPI service + TM depot + WiFi broadcast + OTTO endpoint
 ├── static/
-│   ├── index.html        # Analyzer UI inkl. Modellauswahl
-│   ├── completions.html  # OTTO Grow Chat Oberfläche
-│   └── config.html       # Self-Host + TM Depot Oberfläche
-├── TM-models/            # Versionierte Teachable-Machine Bundles (ZIP-Uploads)
+│   ├── index.html        # Analyzer UI with model selector
+│   ├── completions.html  # OTTO grow chat
+│   └── config.html       # Self-host + TM depot console
+├── TM-models/            # Versioned Teachable Machine bundles (ZIP uploads)
 │   ├── README.md
-│   └── registry.json     # wird zur Laufzeit gepflegt
-├── app-settings.json     # Standardmodell (wird bei Bedarf erzeugt)
+│   └── registry.json     # maintained at runtime
+├── app-settings.json     # Default model & provider settings (created if missing)
 ├── requirements.txt
 ├── README.md
 └── LICENSE
 ```
 
-## Feedback & Rechte
-- Brand & Rechte: **ottcouture.eu** – wir veröffentlichen hier bewusst OpenCore, aber behalten sämtliche Markenrechte.
+## Feedback & rights
+- Brand & rights: **ottcouture.eu** — this is released as OpenCore, but all branding remains with ottcouture.eu.
 - Feedback: **otcdmin@outlook.com**, Instagram **@ottcouture.eu**, Discord [`discord.gg/GMMSqePfPh`](https://discord.gg/GMMSqePfPh).
-- Lizenz: [AGPL-3.0](LICENSE). Bitte alle Forks/Deployments wieder zur Community spiegeln und Credits lassen.
+- License: [AGPL-3.0](LICENSE). Private use and developer testing are allowed; CSCs and companies must license commercial usage directly with ottcouture.eu.

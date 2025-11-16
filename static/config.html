@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>OTTCOUTURE Self-Host Konfigurator</title>
@@ -246,261 +246,273 @@
   <body>
     <div class="page">
       <header>
-        <p style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.8rem; color: var(--accent)">
-          OTTCOUTURE.EU — ENTERPRISE OPENCORE
-        </p>
-        <h1>Self-Host Deck für OTTCOPS</h1>
-        <p>
-          Diese Seite bündelt alle Einstellungen für das OPENCORE Community Modell: Providerwahl, Systemprompts, TM-Depot und
-          Netzwerkfreigaben. Fokus: saubere Workflows für Cannabis-Analysen, ohne Marketing-Sprache.
-        </p>
-        <p>
-          Rechte & Betrieb liegen bei <strong>ottcouture.eu</strong>. Support bitte an <strong>otcdmin@outlook.com</strong>,
-          Instagram <strong>@ottcouture.eu</strong> oder Discord
-          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener" style="color: var(--accent)">
-            discord.gg/GMMSqePfPh
-          </a>
-          .
-        </p>
-        <div class="actions">
-          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">Discord beitreten</a>
-          <a href="/" style="background: rgba(255, 255, 255, 0.2); color: #fff">Zurück zur Analyse</a>
-        </div>
-      </header>
-
-      <section class="card">
-        <h2>1. Anbieter auswählen</h2>
-        <div class="providers" id="provider-group">
-          <label class="provider" data-provider="openai">
-            <input type="radio" name="provider" value="openai" checked />
-            <div>
-              <strong>OpenAI Cloud Vision</strong>
-              <p>Stabiles Hosting, Vision-LLMs wie <code>gpt-4.1-mini</code>. Kein lokales Setup nötig.</p>
-            </div>
-          </label>
-          <label class="provider" data-provider="ollama">
-            <input type="radio" name="provider" value="ollama" />
-            <div>
-              <strong>Ollama (Self-Hosted)</strong>
-              <p>Nutze unsere empfohlenen Modelle auf deinem Rechner oder Edge-Server, Vision aktivieren.</p>
-            </div>
-          </label>
-          <label class="provider" data-provider="lmstudio">
-            <input type="radio" name="provider" value="lmstudio" />
-            <div>
-              <strong>LM Studio API</strong>
-              <p>Starte den API Server, kopiere die Base URL und wähle ein Vision-taugliches Modell.</p>
-            </div>
-          </label>
-        </div>
-        <div class="grid two" style="margin-top: 1.5rem">
-          <label>
-            <span>API Base URL</span>
-            <input id="api-base" type="url" placeholder="https://127.0.0.1:11434" />
-            <small>Für OpenAI leer lassen. Für Self-Host den lokalen Endpoint eintragen.</small>
-          </label>
-          <label>
-            <span>Model Name</span>
-            <input id="model-name" type="text" placeholder="phi3.5-vision-mini" />
-            <small>z. B. Granite Vision 3B oder LLaVA-Phi-3 Mini.</small>
-          </label>
-          <label>
-            <span>API Key (optional)</span>
-            <input id="api-key" type="text" placeholder="Falls dein lokaler Server Auth nutzt" />
-          </label>
-          <label>
-            <span>Vision-Unterstützung</span>
-            <select id="vision-capable">
-              <option value="yes">Direkte Bild-Prompts</option>
-              <option value="manual">Bild wird vorab verarbeitet</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>2. Cannabis System Prompts</h2>
-        <p class="cta">
-          Die Presets liefern strukturierte Ausgangsprompts für Trichome-, Terpen- und Health-Analysen. Sie sind bewusst
-          knapp formuliert und lassen sich bei Bedarf erweitern.
-        </p>
-        <div class="prompt-buttons" id="prompt-buttons"></div>
-        <textarea id="prompt-text"></textarea>
-      </section>
-
-      <section class="card">
-        <h2>3. Vision-Modelle mit geringem Ressourcenbedarf</h2>
-        <ul class="models">
-          <li>
-            <strong>Phi-3.5 Vision Mini (~4.5 GB)</strong>
-            Läuft auf 8 GB VRAM/CPU, gut für schnelle Resin-Maps und generelle Strain-Spekulationen.
-          </li>
-          <li>
-            <strong>LLaVA-Phi-3 Mini (~5 GB)</strong>
-            Findet Leaf-Glitches und Fremdkörper sehr zuverlässig. Ideal für Ollama & LM Studio.
-          </li>
-          <li>
-            <strong>Granite Vision 3B (~3.8 GB)</strong>
-            Effizient auf Edge-Geräten, liefert solide Strain-Cluster ohne viel VRAM.
-          </li>
-          <li>
-            <strong>Bark-LLM Vision 7B (~7.2 GB)</strong>
-            Für längere JSON-Reports mit Batch-Verarbeitung in LM Studio (Q4_K_M empfohlen).
-          </li>
-        </ul>
-      </section>
-
-      <section class="card">
-        <h2>4. Tipps für Ollama &amp; LM Studio</h2>
-        <div class="grid two">
-          <div>
-            <h3>Ollama</h3>
-            <ul>
-              <li><code>ollama pull phi3.5-vision-mini</code> oder Granite Vision Q4 ziehen.</li>
-              <li>In der <code>Modelfile</code> <code>PARAMETER vision true</code> und <code>num_ctx 4096+</code>.</li>
-              <li>Server mit <code>OLLAMA_ORIGINS=*</code> für lokale Tools freigeben.</li>
-              <li>HTTP Endpoint: <code>POST /api/chat</code> mit JSON Payload wie im Preview unten.</li>
-            </ul>
+          <p style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.8rem; color: var(--accent)">
+            OTTCOUTURE.EU — ENTERPRISE OPENCORE
+          </p>
+          <h1>Self-host deck for OTTCOPS</h1>
+          <p>
+            This page bundles every OPENCORE community model setting: provider choice, system prompts, TM depot, and network publishing.
+            Goal: clean workflows for cannabis analysis with neutral, enterprise language.
+          </p>
+          <p>
+            Rights & operations belong to <strong>ottcouture.eu</strong>. Support: <strong>otcdmin@outlook.com</strong>, Instagram
+            <strong>@ottcouture.eu</strong>, or Discord
+            <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener" style="color: var(--accent)">
+              discord.gg/GMMSqePfPh
+            </a>
+            .
+          </p>
+          <div class="actions">
+            <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">Join Discord</a>
+            <a href="/" style="background: rgba(255, 255, 255, 0.2); color: #fff">Back to analyzer</a>
           </div>
-          <div>
-            <h3>LM Studio</h3>
-            <ul>
-              <li>API Server starten, Vision Support aktivieren, Port merken (Standard 1234).</li>
-              <li>Bei schwacher GPU Q4 oder Q5 Quantisierung wählen, CPU Offloading aktivieren.</li>
-              <li>Optional Token setzen und hier eintragen, wenn Auth nötig.</li>
-              <li>Für Multi-User Deployments Reverse Proxy mit HTTPS davor schalten.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+        </header>
 
-      <section class="card" id="tm-depot">
-        <h2>5. OTTCOUTURE Teachable Machine Depot</h2>
-        <p>
-          ZIP hochladen (entweder TFJS mit <code>metadata.json</code>/<code>model.json</code>/<code>weights.bin</code> oder Keras mit
-          <code>keras_model.h5</code> + <code>labels.txt</code>), Typ wählen und wir pinnen das Paket unter <code>/TM-models</code>. Die Modelle
-          stehen anschließend im Analyzer sowie im OTTO-Chat zur Auswahl und bleiben bei <strong>ottcouture.eu</strong> gebrandet.
-        </p>
-        <div class="grid two">
-          <label>
-            <span>Modellname</span>
-            <input id="tm-name" type="text" placeholder="z. B. Frosted Gelato V1" />
-          </label>
-          <label>
-            <span>Kategorie</span>
-            <select id="tm-type">
-              <option value="trichome">Trichomen Analyse</option>
-              <option value="health">Health &amp; Leaf Safety</option>
-            </select>
-          </label>
-          <label>
-            <span>ZIP Upload</span>
-            <input id="tm-file" type="file" accept=".zip" />
-            <small>Struktur: TFJS (metadata.json/model.json/weights.bin) oder Keras (keras_model.h5 + labels.txt [+ optional metadata.json]).</small>
-          </label>
-          <label>
-            <span>Community Reminder</span>
-            <textarea readonly style="min-height: 120px">
-Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMSqePfPh. Wir pushen die besten Builds ins nächste Release.
-            </textarea>
-          </label>
-        </div>
-        <div class="actions" style="margin-top: 1rem">
-          <button class="primary" id="tm-upload-btn">ZIP installieren</button>
-          <button class="secondary" id="tm-refresh-btn" type="button">Modelle aktualisieren</button>
-          <button class="secondary" id="tm-clear-default" type="button">Standard zurücksetzen</button>
-        </div>
+        <section class="card">
+          <h2>1. Choose provider</h2>
+          <div class="providers" id="provider-group">
+            <label class="provider" data-provider="openai">
+              <input type="radio" name="provider" value="openai" checked />
+              <div>
+                <strong>OpenAI Cloud Vision</strong>
+                <p>Reliable hosting with vision LLMs such as <code>gpt-4.1-mini</code>. No local setup required.</p>
+              </div>
+            </label>
+            <label class="provider" data-provider="ollama">
+              <input type="radio" name="provider" value="ollama" />
+              <div>
+                <strong>Ollama (Self-Hosted)</strong>
+                <p>Run the recommended models on your workstation or edge server with vision enabled.</p>
+              </div>
+            </label>
+            <label class="provider" data-provider="lmstudio">
+              <input type="radio" name="provider" value="lmstudio" />
+              <div>
+                <strong>LM Studio API</strong>
+                <p>Start the API server, copy the base URL, and pick a vision-capable model.</p>
+              </div>
+            </label>
+          </div>
+          <div class="grid two" style="margin-top: 1.5rem">
+            <label>
+              <span>API Base URL</span>
+              <input id="api-base" type="url" placeholder="https://127.0.0.1:11434" />
+              <small>Leave blank for OpenAI. For self-host, enter your local endpoint.</small>
+            </label>
+            <label>
+              <span>Model Name</span>
+              <input id="model-name" type="text" placeholder="phi3.5-vision-mini" />
+              <small>e.g., Granite Vision 3B or LLaVA-Phi-3 Mini.</small>
+            </label>
+            <label>
+              <span>API Key (optional)</span>
+              <input id="api-key" type="text" placeholder="Only if your server requires auth" />
+            </label>
+            <label>
+              <span>Vision support</span>
+              <select id="vision-capable">
+                <option value="yes">Direct image prompts</option>
+                <option value="manual">Image is preprocessed</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions" style="margin-top: 1rem; gap: 0.5rem">
+            <label style="flex: 1 1 auto">
+              <span>Profile label</span>
+              <input id="provider-profile-name" type="text" placeholder="e.g., OpenAI Vision" />
+              <small>This name is saved as an LLM profile together with the provider selection.</small>
+            </label>
+            <button class="primary" id="provider-save-btn" type="button" style="align-self: flex-end">Save provider profile</button>
+          </div>
+          <p id="provider-save-status" class="cta" style="display: none"></p>
+        </section>
+
+        <section class="card">
+          <h2>2. Cannabis system prompts</h2>
+          <p class="cta">
+            Presets provide structured starting prompts for trichome, terpene, and health checks. They are intentionally concise
+            and can be extended as needed.
+          </p>
+          <div class="prompt-buttons" id="prompt-buttons"></div>
+          <textarea id="prompt-text"></textarea>
+        </section>
+
+        <section class="card">
+          <h2>3. Vision models with low resource needs</h2>
+          <ul class="models">
+            <li>
+              <strong>Phi-3.5 Vision Mini (~4.5 GB)</strong>
+              Runs on ~8 GB VRAM/CPU, great for quick resin maps and general strain speculation.
+            </li>
+            <li>
+              <strong>LLaVA-Phi-3 Mini (~5 GB)</strong>
+              Detects leaf glitches and foreign objects reliably. Ideal for Ollama & LM Studio.
+            </li>
+            <li>
+              <strong>Granite Vision 3B (~3.8 GB)</strong>
+              Efficient on edge devices, solid strain clustering without much VRAM.
+            </li>
+            <li>
+              <strong>Bark-LLM Vision 7B (~7.2 GB)</strong>
+              For longer JSON reports with batch processing in LM Studio (Q4_K_M recommended).
+            </li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>4. Tips for Ollama &amp; LM Studio</h2>
+          <div class="grid two">
+            <div>
+              <h3>Ollama</h3>
+              <ul>
+                <li><code>ollama pull phi3.5-vision-mini</code> or pull Granite Vision Q4.</li>
+                <li>In the <code>Modelfile</code> set <code>PARAMETER vision true</code> and <code>num_ctx 4096+</code>.</li>
+                <li>Expose the server with <code>OLLAMA_ORIGINS=*</code> for local tools.</li>
+                <li>HTTP endpoint: <code>POST /api/chat</code> with JSON payload like the preview below.</li>
+              </ul>
+            </div>
+            <div>
+              <h3>LM Studio</h3>
+              <ul>
+                <li>Start the API server, enable vision, and note the port (default 1234).</li>
+                <li>On weak GPUs choose Q4 or Q5 quantization and enable CPU offloading.</li>
+                <li>Optionally set a token and enter it here if auth is required.</li>
+                <li>Add an HTTPS reverse proxy for multi-user deployments.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" id="tm-depot">
+          <h2>5. OTTCOUTURE Teachable Machine depot</h2>
+          <p>
+            Upload a ZIP (TFJS with <code>metadata.json</code>/<code>model.json</code>/<code>weights.bin</code> or Keras with
+            <code>keras_model.h5</code> + <code>labels.txt</code>), choose the type, and we pin the bundle under <code>/TM-models</code>.
+            Models become selectable in the analyzer and OTTO chat and stay branded to <strong>ottcouture.eu</strong>.
+          </p>
+          <div class="grid two">
+            <label>
+              <span>Modellname</span>
+              <input id="tm-name" type="text" placeholder="z. B. Frosted Gelato V1" />
+            </label>
+            <label>
+              <span>Kategorie</span>
+              <select id="tm-type">
+                <option value="trichome">Trichome analysis</option>
+                <option value="health">Health &amp; leaf safety</option>
+              </select>
+            </label>
+            <label>
+              <span>ZIP upload</span>
+              <input id="tm-file" type="file" accept=".zip" />
+              <small>Structure: TFJS (metadata.json/model.json/weights.bin) or Keras (keras_model.h5 + labels.txt [+ optional metadata.json]).</small>
+            </label>
+            <label>
+              <span>Community Reminder</span>
+              <textarea readonly style="min-height: 120px">
+  Feedback? otcdmin@outlook.com · Instagram @ottcouture.eu · Discord discord.gg/GMMSqePfPh. We roll the best builds into the next release.
+              </textarea>
+            </label>
+          </div>
+          <div class="actions" style="margin-top: 1rem">
+            <button class="primary" id="tm-upload-btn">Install ZIP</button>
+            <button class="secondary" id="tm-refresh-btn" type="button">Refresh models</button>
+            <button class="secondary" id="tm-clear-default" type="button">Clear default</button>
+          </div>
         <p id="tm-status" class="cta" style="display: none"></p>
         <p id="tm-default-note" class="cta"></p>
-        <div class="tm-list">
-          <h3>Installierte OTTCOPS TM Modelle</h3>
-          <ul id="tm-models">
-            <li>Lade die Übersicht …</li>
-          </ul>
-        </div>
-      </section>
+          <div class="tm-list">
+            <h3>Installed OTTCOPS TM models</h3>
+            <ul id="tm-models">
+              <li>Loading registry …</li>
+            </ul>
+          </div>
+        </section>
 
-      <section class="card" id="network-card">
-        <h2>6. WiFi Broadcast &amp; ottcolab.local</h2>
-        <p>
-          Damit jedes Device im selben WLAN sofort <code>ottcolab.local</code> erreicht, announcen wir via mDNS einen Hostnamen.
-          Dieser Mode gehört komplett zu <strong>ottcouture.eu</strong>; Feedback an otcdmin@outlook.com oder über
-          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">discord.gg/GMMSqePfPh</a>.
-        </p>
-        <div class="grid two">
-          <label>
-            <span>Hostname (.local)</span>
-            <input id="mdns-host" type="text" placeholder="ottcolab.local" />
-            <small>Wir normalisieren auf .local – funktioniert auf macOS, Windows, Linux &amp; iOS/Android.</small>
-          </label>
-          <label>
-            <span>Port</span>
-            <input id="mdns-port" type="number" min="1" max="65535" placeholder="8000" />
-            <small>Gleicher Port wie dein Uvicorn-Server. Standard 8000.</small>
-          </label>
-        </div>
-        <div class="actions" style="margin-top: 1rem">
-          <button class="primary" id="mdns-start" type="button">Broadcast aktivieren</button>
-          <button class="secondary" id="mdns-stop" type="button">Stoppen</button>
-        </div>
-        <p class="cta" id="mdns-status">Status: lädt …</p>
-        <p class="cta">
-          Technischer Hinweis: Wir announcen `_http._tcp` via <code>zeroconf</code>. Bitte sicherstellen, dass
-          <code>pip install zeroconf</code> ausgeführt wurde, sonst kann der Broadcast nicht starten.
-        </p>
-      </section>
+        <section class="card" id="network-card">
+          <h2>6. WiFi broadcast &amp; ottcolab.local</h2>
+          <p>
+            To let every device on the same WiFi reach <code>ottcolab.local</code>, we announce a hostname via mDNS. This mode is
+            fully owned by <strong>ottcouture.eu</strong>; send feedback to otcdmin@outlook.com or
+            <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">discord.gg/GMMSqePfPh</a>.
+          </p>
+          <div class="grid two">
+            <label>
+              <span>Hostname (.local)</span>
+              <input id="mdns-host" type="text" placeholder="ottcolab.local" />
+              <small>We normalize to .local – works on macOS, Windows, Linux &amp; iOS/Android.</small>
+            </label>
+            <label>
+              <span>Port</span>
+              <input id="mdns-port" type="number" min="1" max="65535" placeholder="8000" />
+              <small>Same port as your Uvicorn server. Default 8000.</small>
+            </label>
+          </div>
+          <div class="actions" style="margin-top: 1rem">
+            <button class="primary" id="mdns-start" type="button">Enable broadcast</button>
+            <button class="secondary" id="mdns-stop" type="button">Stop</button>
+          </div>
+          <p class="cta" id="mdns-status">Status: loading …</p>
+          <p class="cta">
+            Technical note: we announce `_http._tcp` via <code>zeroconf</code>. Make sure
+            <code>pip install zeroconf</code> is installed, otherwise the broadcast cannot start.
+          </p>
+        </section>
 
-      <section class="card">
-        <h2>7. Einstellungen speichern</h2>
-        <p>
-          Wir persistieren die Provider-Einstellungen lokal (<code>localStorage.cannabisLLMConfig</code>) und serverseitig über
-          <code>/api/settings/llm</code>. Mehrere Profile können hier angelegt und im Analyzer/OTTO ausgewählt werden.
-        </p>
-        <div class="grid two">
-          <label>
-            Profil auswählen
-            <select id="llm-profile-list">
-              <option value="">Aktives Server-Profil</option>
-            </select>
-            <small>Profile definieren Provider, Base-URL, Modell und System-Prompt.</small>
+        <section class="card">
+          <h2>7. Save settings</h2>
+          <p>
+            Provider settings persist locally (<code>localStorage.cannabisLLMConfig</code>) and server-side via
+            <code>/api/settings/llm</code>. Multiple profiles can be created here and selected in the analyzer/OTTO.
+          </p>
+          <div class="grid two">
+            <label>
+              Select profile
+              <select id="llm-profile-list">
+                <option value="">Active server profile</option>
+              </select>
+              <small>Profiles define provider, base URL, model, and system prompt.</small>
+            </label>
+            <label>
+              Profile name
+              <input id="llm-profile-name" type="text" placeholder="e.g., OpenAI Vision" />
+              <small>Short label for dropdowns in Analyzer/Streams/OTTO.</small>
+            </label>
+          </div>
+          <div class="actions" style="gap: 0.5rem; margin-bottom: 0.5rem">
+            <button class="secondary" id="llm-profile-new" type="button">New profile</button>
+            <button class="primary" id="llm-profile-save" type="button">Save profile</button>
+            <button class="secondary" id="llm-profile-activate" type="button">Set as active</button>
+            <button class="secondary" id="llm-profile-delete" type="button">Delete profile</button>
+          </div>
+          <label style="display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem">
+            <input type="checkbox" id="llm-profile-active" checked />
+            Apply as active profile after saving
           </label>
-          <label>
-            Profil-Name
-            <input id="llm-profile-name" type="text" placeholder="z. B. OpenAI Vision" />
-            <small>Kurzer Name für die Dropdowns in Analyzer/Streams/OTTO.</small>
-          </label>
-        </div>
-        <div class="actions" style="gap: 0.5rem; margin-bottom: 0.5rem">
-          <button class="secondary" id="llm-profile-new" type="button">Neues Profil</button>
-          <button class="secondary" id="llm-profile-activate" type="button">Als aktiv setzen</button>
-          <button class="secondary" id="llm-profile-delete" type="button">Profil löschen</button>
-        </div>
-        <label style="display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem">
-          <input type="checkbox" id="llm-profile-active" checked />
-          Nach dem Speichern als aktives Profil übernehmen
-        </label>
-        <div class="actions">
-          <button class="primary" id="save-btn">Speichern</button>
-          <button class="secondary" id="reset-btn">Zurücksetzen</button>
-          <a
-            href="/"
-            style="text-decoration: none; padding: 0.85rem 1.25rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff"
-            >Zur Analyseoberfläche</a
-          >
-        </div>
+          <div class="actions">
+            <button class="primary" id="save-btn">Save</button>
+            <button class="secondary" id="llm-test-btn" type="button">Test connection</button>
+            <button class="secondary" id="reset-btn">Reset</button>
+            <a
+              href="/"
+              style="text-decoration: none; padding: 0.85rem 1.25rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff"
+              >Back to analyzer</a
+            >
+          </div>
         <pre id="preview"></pre>
         <p id="llm-save-status" class="cta" style="display: none"></p>
-        <p class="cta">
-          Feedback & Support: <strong>otcdmin@outlook.com</strong>, Insta <strong>@ottcouture.eu</strong>, Discord
-          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">discord.gg/GMMSqePfPh</a>.
-        </p>
-      </section>
+        <p id="llm-test-status" class="cta" style="display: none"></p>
+          <p class="cta">
+            Feedback & support: <strong>otcdmin@outlook.com</strong>, Instagram <strong>@ottcouture.eu</strong>, Discord
+            <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">discord.gg/GMMSqePfPh</a>.
+          </p>
+        </section>
 
-      <footer>
-        © OTTCOUTURE OpenCore — Alle Rechte liegen bei
-        <a href="https://ottcouture.eu" target="_blank" rel="noopener">ottcouture.eu</a>. Discord:
-        <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">GMMSqePfPh</a>.
-      </footer>
+        <footer>
+          © OTTCOUTURE OpenCore — all rights belong to
+          <a href="https://ottcouture.eu" target="_blank" rel="noopener">ottcouture.eu</a>. Discord:
+          <a href="https://discord.gg/GMMSqePfPh" target="_blank" rel="noopener">GMMSqePfPh</a>.
+        </footer>
     </div>
 
     <script>
@@ -508,30 +520,33 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         {
           id: "potency",
           label: "Trichome Heatmap",
-          text:
-            "Analysiere sichtbare Trichome, Harzflächen und Farbverläufe. Erstelle ein JSON mit den Keys resin_density (Prozent), maturity_score (0-100) und observations[] für kurze Stichpunkte.",
+            text:
+              "Analyze visible trichomes, resin coverage, and color gradients. Produce JSON with keys resin_density (percent), maturity_score (0-100), and observations[] for bullet points.",
         },
         {
           id: "terpen",
           label: "Terpen Stack",
-          text:
-            "Leite aus Farbe, Struktur und Kristallen mögliche Terpen-Cluster ab. JSON-Struktur: dominant_terps[], aroma_tags[], pairing_notes.",
+            text:
+              "Infer potential terpene clusters from color, structure, and crystals. JSON structure: dominant_terps[], aroma_tags[], pairing_notes.",
         },
         {
           id: "contaminants",
           label: "Glitch Hunt",
-          text:
-            "Scanne nach Fremdkörpern, Schimmel oder Blattstress. JSON-Ausgabe mit severity_scores, detected_artifacts und recommended_actions.",
+            text:
+              "Scan for foreign objects, mold, or leaf stress. JSON output with severity_scores, detected_artifacts, and recommended_actions.",
         },
         {
           id: "compliance",
           label: "Drop Dossier",
-          text:
-            "Dokumentiere sichtbare Merkmale und Verpackungsdetails für ein Sammler-Briefing. JSON-Felder: meta, packaging, release_notes.",
-        },
-      ];
+            text:
+              "Document visible traits and packaging details for a collector briefing. JSON fields: meta, packaging, release_notes.",
+          },
+        ];
 
       const providerGroup = document.getElementById("provider-group");
+      const providerProfileName = document.getElementById("provider-profile-name");
+      const providerSaveBtn = document.getElementById("provider-save-btn");
+      const providerSaveStatus = document.getElementById("provider-save-status");
       const apiBaseInput = document.getElementById("api-base");
       const modelInput = document.getElementById("model-name");
       const apiKeyInput = document.getElementById("api-key");
@@ -559,9 +574,12 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       const llmProfileList = document.getElementById("llm-profile-list");
       const llmProfileName = document.getElementById("llm-profile-name");
       const llmProfileNew = document.getElementById("llm-profile-new");
+      const llmProfileSave = document.getElementById("llm-profile-save");
       const llmProfileDelete = document.getElementById("llm-profile-delete");
       const llmProfileActivate = document.getElementById("llm-profile-activate");
       const llmProfileActiveToggle = document.getElementById("llm-profile-active");
+      const llmTestBtn = document.getElementById("llm-test-btn");
+      const llmTestStatus = document.getElementById("llm-test-status");
 
       let llmProfiles = [];
       let activeProfileId = null;
@@ -639,6 +657,20 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         llmStatus.textContent = message;
       }
 
+      function setProviderSaveStatus(message, isError = false) {
+        if (!providerSaveStatus) return;
+        providerSaveStatus.style.display = "block";
+        providerSaveStatus.style.borderColor = isError ? "#ff8181" : "rgba(255,255,255,0.2)";
+        providerSaveStatus.textContent = message;
+      }
+
+      function setLlmTestStatus(message, isError = false) {
+        if (!llmTestStatus) return;
+        llmTestStatus.style.display = "block";
+        llmTestStatus.style.borderColor = isError ? "#ff8181" : "rgba(255,255,255,0.2)";
+        llmTestStatus.textContent = message;
+      }
+
       function renderProfileList() {
         if (!llmProfileList) return;
         llmProfileList.innerHTML = "";
@@ -662,10 +694,12 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         const profile = llmProfiles.find((p) => p.id === currentProfileId);
         if (profile) {
           llmProfileName.value = profile.name || "";
+          if (providerProfileName) providerProfileName.value = profile.name || "";
           applyConfig(profile.config || {});
           localStorage.setItem("cannabisLLMConfig", JSON.stringify(profile.config || {}));
         } else if (lastServerConfig) {
           llmProfileName.value = "";
+          if (providerProfileName) providerProfileName.value = "";
           applyConfig(lastServerConfig);
         } else {
           applyConfig({ provider: "openai", vision: "yes", systemPrompt: PROMPTS[0].text });
@@ -681,6 +715,9 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         if (payload.profile) {
           currentProfileId = payload.profile.id;
           llmProfileName.value = payload.profile.name || "";
+        }
+        if (!payload.profile && payload.active_profile_id) {
+          currentProfileId = payload.active_profile_id;
         }
         renderProfileList();
       }
@@ -710,8 +747,8 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               config,
-              profile_id: currentProfileId || undefined,
-              profile_name: llmProfileName.value || undefined,
+              profile_id: currentProfileId || null,
+              profile_name: llmProfileName.value,
               make_active: llmProfileActiveToggle?.checked ?? true,
             }),
           });
@@ -727,10 +764,64 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           setLlmStatus(error.message || "Server konnte nicht speichern.", true);
         } finally {
           if (saveBtn) {
-            setTimeout(() => {
-              saveBtn.disabled = false;
-              saveBtn.textContent = "Speichern";
-            }, 900);
+          setTimeout(() => {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Speichern";
+          }, 900);
+        }
+      }
+
+      async function quickSaveProviderProfile() {
+        const name = providerProfileName?.value.trim();
+        if (llmProfileName && name) {
+          llmProfileName.value = name;
+        }
+        if (!currentProfileId) {
+          currentProfileId = null; // ensure a new profile can be created
+        }
+        setProviderSaveStatus("Saving provider profile …");
+        try {
+          await persistLlmConfig();
+          setProviderSaveStatus("Provider profile saved.");
+        } catch (error) {
+          setProviderSaveStatus(error.message || "Could not save profile.", true);
+        }
+      }
+      }
+
+      async function testLlmConfig() {
+        const config = getConfig();
+        setLlmTestStatus("Testing …");
+        if (llmTestBtn) {
+          llmTestBtn.disabled = true;
+          llmTestBtn.textContent = "Teste …";
+        }
+        try {
+          const response = await fetch("/api/settings/llm/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              config,
+              profile_id: currentProfileId || null,
+              profile_name: llmProfileName.value,
+            }),
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(payload.detail || "LLM-Test fehlgeschlagen");
+          }
+          const latency = payload.elapsed_ms != null ? `${payload.elapsed_ms} ms` : "–";
+          setLlmTestStatus(
+            `LLM erreichbar (${payload.provider || "?"} · ${payload.model || "?"}) — Latenz ${latency}. Preview: ${
+              payload.preview || "ok"
+            }`
+          );
+        } catch (error) {
+          setLlmTestStatus(error.message || "LLM nicht erreichbar.", true);
+        } finally {
+          if (llmTestBtn) {
+            llmTestBtn.disabled = false;
+            llmTestBtn.textContent = "Verbindung testen";
           }
         }
       }
@@ -742,7 +833,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           const response = await fetch("/api/settings/llm", { method: "DELETE" });
           const payload = await response.json().catch(() => ({}));
           if (!response.ok) {
-            throw new Error(payload.detail || "Serverfehler beim Zurücksetzen");
+            throw new Error(payload.detail || "Server error while resetting");
           }
           llmProfiles = payload.profiles || [];
           activeProfileId = payload.active_profile_id || null;
@@ -750,10 +841,10 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           currentProfileId = activeProfileId;
           renderProfileList();
           applyProfileSelection(currentProfileId);
-          setLlmStatus("Server-Config zurückgesetzt.");
+          setLlmStatus("Server config reset.");
         } catch (error) {
           console.error("LLM reset", error);
-          setLlmStatus(error.message || "Server konnte nicht zurücksetzen.", true);
+          setLlmStatus(error.message || "Server could not reset.", true);
         }
       }
 
@@ -785,7 +876,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
 
       async function refreshTmModels() {
         if (!tmList) return;
-        tmList.innerHTML = "<li>lädt …</li>";
+        tmList.innerHTML = "<li>loading …</li>";
         try {
           const response = await fetch("/tm-models");
           if (!response.ok) throw new Error("HTTP " + response.status);
@@ -808,7 +899,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
             )}</span>`;
             const meta = document.createElement("small");
             const strainInfo = model.metadata?.labels?.join ? model.metadata.labels.join(", ") : "–";
-            meta.innerHTML = `Pfad: ${model.path}<br/>Labels: ${strainInfo}<br/>Hinzugefügt: ${added}`;
+            meta.innerHTML = `Path: ${model.path}<br/>Labels: ${strainInfo}<br/>Added: ${added}`;
             const defaultButton = document.createElement("button");
             defaultButton.type = "button";
             defaultButton.className = model.is_default ? "primary" : "secondary";
@@ -853,12 +944,12 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       }
 
       async function clearDefaultTmModel() {
-        setTmStatus("Standard wird zurückgesetzt …");
+        setTmStatus("Clearing default …");
         try {
           const response = await fetch("/tm-models/default", { method: "DELETE" });
           if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.detail || "Zurücksetzen fehlgeschlagen.");
+            throw new Error(error.detail || "Reset failed.");
           }
           setTmStatus("Standard entfernt. Der Analyzer nutzt jetzt die OPENCORE Referenz oder das erste Modell.");
           await refreshTmModels();
@@ -870,7 +961,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       async function uploadTmModel() {
         const file = tmFileInput.files[0];
         if (!file) {
-          setTmStatus("Bitte zuerst eine ZIP-Datei auswählen.", true);
+          setTmStatus("Please choose a ZIP file first.", true);
           return;
         }
         const name = tmNameInput.value.trim() || file.name.replace(/\.zip$/i, "");
@@ -880,7 +971,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         formData.append("model_type", tmTypeSelect.value);
         tmUploadBtn.disabled = true;
         tmUploadBtn.textContent = "Wird hochgeladen…";
-        setTmStatus("Upload läuft …");
+        setTmStatus("Uploading …");
         try {
           const response = await fetch("/tm-models/upload", { method: "POST", body: formData });
           if (!response.ok) {
@@ -900,7 +991,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
 
       async function refreshNetworkStatus() {
         if (!mdnsStatus) return;
-        mdnsStatus.textContent = "Status: lädt …";
+        mdnsStatus.textContent = "Status: loading …";
         try {
           const response = await fetch("/network/status");
           if (!response.ok) throw new Error("HTTP " + response.status);
@@ -909,7 +1000,7 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
           const available = payload.mdns_available;
           if (!available) {
             mdnsStatus.textContent =
-              "zeroconf fehlt. Bitte 'pip install zeroconf' ausführen, damit ottcolab.local announced werden kann.";
+              "zeroconf missing. Please run 'pip install zeroconf' so ottcolab.local can be announced.";
             if (mdnsStartBtn) mdnsStartBtn.disabled = true;
             if (mdnsStopBtn) mdnsStopBtn.disabled = true;
             return;
@@ -997,12 +1088,25 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         }
       });
 
+      if (providerSaveBtn) {
+        providerSaveBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          quickSaveProviderProfile();
+        });
+      }
+
       [apiBaseInput, modelInput, apiKeyInput, visionSelect, promptText].forEach((el) =>
         el.addEventListener("input", updatePreview)
       );
 
       if (llmProfileList) {
         llmProfileList.addEventListener("change", (event) => applyProfileSelection(event.target.value));
+      }
+      if (llmProfileSave) {
+        llmProfileSave.addEventListener("click", () => {
+          setLlmStatus("Profil wird gespeichert …");
+          persistLlmConfig();
+        });
       }
       if (llmProfileNew) {
         llmProfileNew.addEventListener("click", () => {
@@ -1016,27 +1120,27 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
       if (llmProfileDelete) {
         llmProfileDelete.addEventListener("click", async () => {
           if (!currentProfileId) {
-            setLlmStatus("Kein Profil ausgewählt.", true);
+            setLlmStatus("No profile selected.", true);
             return;
           }
-          if (!confirm("Profil wirklich löschen?")) return;
+          if (!confirm("Delete this profile?")) return;
           try {
             const response = await fetch(`/api/settings/llm/profiles/${currentProfileId}`, { method: "DELETE" });
             const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.detail || "Serverfehler beim Löschen");
+            if (!response.ok) throw new Error(payload.detail || "Server error while deleting");
             applyLlmServerPayload(payload);
             currentProfileId = payload.active_profile_id || null;
             applyProfileSelection(currentProfileId);
             setLlmStatus(payload.message || "Profil entfernt.");
           } catch (error) {
-            setLlmStatus(error.message || "Profil konnte nicht gelöscht werden.", true);
+            setLlmStatus(error.message || "Profile could not be deleted.", true);
           }
         });
       }
       if (llmProfileActivate) {
         llmProfileActivate.addEventListener("click", async () => {
           if (!currentProfileId) {
-            setLlmStatus("Kein Profil ausgewählt.", true);
+            setLlmStatus("No profile selected.", true);
             return;
           }
           try {
@@ -1056,6 +1160,13 @@ Feedback? otcdmin@outlook.com · Insta @ottcouture.eu · Discord discord.gg/GMMS
         saveBtn.addEventListener("click", (event) => {
           event.preventDefault();
           persistLlmConfig();
+        });
+      }
+
+      if (llmTestBtn) {
+        llmTestBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          testLlmConfig();
         });
       }
 

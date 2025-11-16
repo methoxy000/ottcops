@@ -130,7 +130,7 @@ _app_settings: Dict[str, Any] = {}
 _stream_lock = threading.Lock()
 
 LOG_LEVEL = os.getenv("OTTC_LOG_LEVEL", "INFO").upper()
-UPSTREAM_REPO_URL = os.getenv("OTTC_REPO_URL", "https://github.com/methoxy000/ottcops.git")
+UPSTREAM_REPO_URL = os.getenv("OTTC_REPO_URL", "https://github.com/ottco-dev/ottcops.git")
 UPSTREAM_REPO_BRANCH = os.getenv("OTTC_REPO_BRANCH", "main")
 
 
@@ -804,6 +804,39 @@ def execute_llm_chat(messages: List[Dict[str, Any]], config: Optional[Dict[str, 
     if provider == "lmstudio":
         return call_lmstudio_backend(messages, config)
     raise HTTPException(status_code=400, detail=f"Unbekannter Provider: {provider}")
+
+
+def run_llm_connectivity_probe(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Send a lightweight ping to the configured LLM provider for reachability diagnostics."""
+
+    normalized = normalize_llm_config(config)
+    request_id = generate_request_id()
+    model = get_effective_model_name(normalized)
+    started = time.perf_counter()
+    try:
+        reply = execute_llm_chat(
+            [
+                {
+                    "role": "system",
+                    "content": "Connectivity check: antworte mit einem kurzen ok-Text.",
+                },
+                {"role": "user", "content": "Ping von ottcouture.eu config healthcheck."},
+            ],
+            normalized,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - network errors
+        raise HTTPException(status_code=502, detail=f"LLM-Test fehlgeschlagen: {exc}") from exc
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    snippet = str(reply).strip()
+    return {
+        "request_id": request_id,
+        "provider": normalized.get("provider") or "openai",
+        "model": model,
+        "elapsed_ms": elapsed_ms,
+        "preview": snippet[:400],
+    }
 
 
 def get_network_config_path() -> Path:
@@ -1793,13 +1826,22 @@ async def fetch_llm_settings() -> JSONResponse:
     return JSONResponse(build_llm_settings_payload())
 
 
+@app.post("/api/settings/llm/test", response_class=JSONResponse)
+async def test_llm_settings(payload: LLMConfigPayload) -> JSONResponse:
+    """Send a quick test completion against the selected or active LLM profile."""
+
+    config = normalize_llm_config(payload.config) if payload.config else get_llm_config(payload.profile_id)
+    probe = run_llm_connectivity_probe(config)
+    return JSONResponse({"message": "LLM-Test erfolgreich", **probe})
+
+
 @app.post("/api/settings/llm", response_class=JSONResponse)
 async def persist_llm_settings(payload: LLMConfigPayload) -> JSONResponse:
     """Persist the provider/system prompt configuration in app-settings.json."""
 
     if not payload.config:
         raise HTTPException(status_code=400, detail="Konfiguration fehlt.")
-    if payload.profile_id or payload.profile_name:
+    if (payload.profile_id is not None) or (payload.profile_name is not None):
         profile = upsert_llm_profile(payload.config, payload.profile_name, payload.profile_id, payload.make_active)
         return JSONResponse(
             {

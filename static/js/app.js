@@ -6,30 +6,30 @@ const PROMPT_TEMPLATES = [
   {
     id: "trichomes_maturity",
     label: "Trichome-Reifegrad",
-    description: "Analysiert Klar/Milchig/Amber und das Erntefenster.",
+    description: "Analyzes clear/milky/amber balance and harvest timing.",
     prompt:
-      "Analysiere bitte die Trichome auf Klar/Milchig/Amber, beschreibe die Verteilung und schätze das optimale Erntefenster.",
+      "Analyze the trichomes for clear/milky/amber, describe the distribution, and estimate the optimal harvest window.",
   },
   {
     id: "bud_health_mold",
     label: "Bud-Health / Schimmel",
-    description: "Prüft Buds auf Schimmel, Fäulnis und generelle Gesundheit.",
+    description: "Checks buds for mold, rot, and general health.",
     prompt:
-      "Untersuche das Bild auf Schimmel, Fäulnis oder andere Probleme der Bud-Gesundheit und beschreibe die Risiken.",
+      "Inspect the image for mold, rot, or other bud health issues and describe the risks.",
   },
   {
     id: "pest_detection",
     label: "Pest-Detection",
-    description: "Sucht nach sichtbaren Schädlingen oder typischen Schadmustern.",
+    description: "Looks for visible pests or characteristic damage patterns.",
     prompt:
-      "Analysiere das Bild auf sichtbare Schädlinge oder typische Schadbilder und beschreibe die Befunde.",
+      "Analyze the image for visible pests or typical damage patterns and describe the findings.",
   },
   {
     id: "bag_appeal",
     label: "Bag Appeal",
-    description: "Bewertet Trim, Struktur, Frost und Farbspiel.",
+    description: "Scores trim, structure, frost, and color play.",
     prompt:
-      "Bewerte das visuelle Erscheinungsbild (Bag Appeal) der Buds: Trim, Struktur, Trichomdichte, Farbspiel, Gesamteindruck.",
+      "Evaluate the visual appearance (bag appeal) of the buds: trim, structure, trichome density, color, and overall impression.",
   },
 ];
 
@@ -180,7 +180,7 @@ function initTemplates() {
 
 function renderTemplateOptions() {
   if (!dom.templateSelect) return;
-  dom.templateSelect.innerHTML = '<option value="">Template auswählen …</option>';
+    dom.templateSelect.innerHTML = '<option value="">Select template …</option>';
   PROMPT_TEMPLATES.forEach((tpl) => {
     const option = document.createElement("option");
     option.value = tpl.id;
@@ -190,7 +190,7 @@ function renderTemplateOptions() {
   if (state.customTemplates.length) {
     const divider = document.createElement("option");
     divider.disabled = true;
-    divider.textContent = "──── Eigene Templates ────";
+      divider.textContent = "──── Custom templates ────";
     dom.templateSelect.appendChild(divider);
     state.customTemplates.forEach((tpl) => {
       const option = document.createElement("option");
@@ -215,7 +215,7 @@ function renderCustomTemplateList() {
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "pill-button";
-    removeBtn.textContent = "Löschen";
+    removeBtn.textContent = "Delete";
     removeBtn.addEventListener("click", () => removeCustomTemplate(tpl.id));
     row.append(info, removeBtn);
     dom.templateList.appendChild(row);
@@ -272,15 +272,15 @@ function applyDebugFromQuery() {
 function handleAnalysisModeChange() {
   state.analysisMode = dom.analysisMode.value;
   const isMl = state.analysisMode === "ml";
-  dom.analysisHint.textContent = isMl
-    ? "ML-only benötigt keinen Prompt."
-    : "Hybrid kombiniert ML + GPT und benötigt einen Prompt.";
+    dom.analysisHint.textContent = isMl
+      ? "ML-only does not require a prompt."
+      : "Hybrid combines ML + GPT and requires a prompt.";
   if (dom.prompt) {
     dom.prompt.required = !isMl;
-    dom.prompt.placeholder = isMl ? "Optionaler Hinweis für das ML-Log" : "Beschreibe die gewünschte Analyse";
+      dom.prompt.placeholder = isMl ? "Optional note for the ML log" : "Describe the desired analysis";
   }
   if (isMl) {
-    setMlDebugMessage(["ML-Modus aktiv. Modelle werden beim nächsten Run initialisiert."]);
+      setMlDebugMessage(["ML mode active. Models initialize on the next run."]);
   } else {
     setMlDebugMessage([]);
   }
@@ -302,7 +302,7 @@ function saveCustomTemplate() {
   const description = dom.templateDescription.value.trim();
   const prompt = dom.prompt.value.trim();
   if (!label || !prompt) {
-    showToast("Name und Prompt sind erforderlich.");
+      showToast("Name and prompt are required.");
     return;
   }
   const entry = {
@@ -318,7 +318,7 @@ function saveCustomTemplate() {
   dom.templateName.value = "";
   dom.templateDescription.value = "";
   closeModal(dom.templateModal);
-  showToast("Template gespeichert.");
+    showToast("Template saved.");
 }
 
 function persistCustomTemplates() {
@@ -330,7 +330,7 @@ function removeCustomTemplate(id) {
   persistCustomTemplates();
   renderTemplateOptions();
   renderCustomTemplateList();
-  showToast("Template entfernt.");
+    showToast("Template removed.");
 }
 
 function setupDropzone() {
@@ -365,16 +365,16 @@ function handleFileChange(event) {
 function updatePreviewGrid() {
   dom.previewContainer.innerHTML = "";
   if (!state.files.length) {
-    dom.fileStatus.textContent = "Keine Dateien ausgewählt.";
+    dom.fileStatus.textContent = "No files selected.";
     return;
   }
-  dom.fileStatus.textContent = `${state.files.length} Datei(en) ausgewählt.`;
+  dom.fileStatus.textContent = `${state.files.length} file(s) selected.`;
   state.files.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const item = document.createElement("div");
       item.className = "preview-item";
-      item.innerHTML = `<img src="${event.target.result}" alt="Preview" /><small>${file.name || `Bild ${index + 1}`}</small>`;
+        item.innerHTML = `<img src="${event.target.result}" alt="Preview" /><small>${file.name || `Image ${index + 1}`}</small>`;
       item.addEventListener("click", () => openImageModal(event.target.result));
       dom.previewContainer.appendChild(item);
     };
@@ -397,7 +397,7 @@ function handleZoomChange() {
 function loadModels() {
   if (!dom.modelSelect) return;
   dom.modelSelect.disabled = true;
-  dom.modelSelect.innerHTML = "<option>Modelle werden geladen …</option>";
+    dom.modelSelect.innerHTML = "<option>Loading models …</option>";
   apiRequest("/tm-models")
     .then((payload) => {
       const models = payload.models || [];
@@ -408,10 +408,10 @@ function loadModels() {
       if (dom.streamModel) {
         populateModelSelect(dom.streamModel, models, hasBuiltin, defaultId, true);
       }
-      dom.modelStatus.textContent = "Die Auswahl bestimmt das aktive Teachable-Machine-Paket.";
+        dom.modelStatus.textContent = "The selection controls the active Teachable Machine package.";
     })
     .catch((error) => {
-      dom.modelStatus.textContent = `Modelle konnten nicht geladen werden (${error.message}).`;
+        dom.modelStatus.textContent = `Models could not load (${error.message}).`;
     })
     .finally(() => {
       dom.modelSelect.disabled = false;
@@ -420,11 +420,11 @@ function loadModels() {
 
 function populateModelSelect(selectEl, models, hasBuiltin, defaultId, optional = false) {
   if (!selectEl) return;
-  selectEl.innerHTML = optional ? '<option value="">Standard verwenden</option>' : "";
+    selectEl.innerHTML = optional ? '<option value="">Use default</option>' : "";
   if (hasBuiltin) {
     const option = document.createElement("option");
     option.value = "builtin";
-    option.textContent = "OPENCORE Referenz (TEACHABLE_MODEL_PATH)";
+      option.textContent = "OPENCORE reference (TEACHABLE_MODEL_PATH)";
     selectEl.appendChild(option);
   }
   models.forEach((model) => {
@@ -448,17 +448,17 @@ async function handleAnalyzeSubmit(event) {
   event.preventDefault();
   const prompt = dom.prompt.value.trim();
   if (state.analysisMode !== "ml" && !prompt) {
-    showToast("Prompt ist erforderlich.");
+      showToast("Prompt is required.");
     return;
   }
   if (!state.files.length) {
-    showToast("Bitte mindestens ein Bild hinzufügen.");
+      showToast("Please add at least one image.");
     return;
   }
   if (state.analysisMode === "ml") {
-    setMlDebugMessage(["Initialisiere Modell …", `Uploads: ${state.files.length}`]);
+      setMlDebugMessage(["Initializing model …", `Uploads: ${state.files.length}`]);
   }
-  dom.runStatus.textContent = "Analyse läuft …";
+    dom.runStatus.textContent = "Running analysis …";
   dom.analyzeBtn.disabled = true;
   const formData = new FormData();
   formData.append("prompt", prompt);
@@ -484,15 +484,15 @@ async function handleAnalyzeSubmit(event) {
     const payload = await apiRequest(endpoint, { method: "POST", body: formData });
     const elapsed = Math.round(performance.now() - clientStart);
     handleResult(payload, elapsed);
-    dom.runStatus.textContent = `Fertig (${elapsed} ms)`;
+      dom.runStatus.textContent = `Done (${elapsed} ms)`;
   } catch (error) {
-    dom.runStatus.textContent = "Fehler";
-    dom.resultDisplay.innerHTML = `<p class="disclaimer">Fehler: ${error.message}</p>`;
+      dom.runStatus.textContent = "Error";
+      dom.resultDisplay.innerHTML = `<p class="disclaimer">Error: ${error.message}</p>`;
     dom.resultJson.textContent = JSON.stringify({ status: "error", message: error.message }, null, 2);
     dom.debugPanel.classList.add("active");
-    dom.debugPanel.textContent = `Client-Fehler: ${error.message}`;
+      dom.debugPanel.textContent = `Client error: ${error.message}`;
     if (state.analysisMode === "ml") {
-      setMlDebugMessage([`Fehler: ${error.message}`]);
+        setMlDebugMessage([`Error: ${error.message}`]);
     }
   } finally {
     dom.analyzeBtn.disabled = false;
@@ -515,7 +515,7 @@ function normalizeResult(payload) {
   }
   const wrapper = {
     status: payload.status || "ok",
-    summary: { text: payload.summary?.text || payload.gpt_response || "Report erstellt." },
+      summary: { text: payload.summary?.text || payload.gpt_response || "Report created." },
     items: [
       {
         image_id: state.files[0]?.name || "upload",
@@ -535,9 +535,9 @@ function renderResultTabs(result) {
     return;
   }
   dom.resultTabs.innerHTML = "";
-  const tabs = [{ key: "summary", label: "Gesamt-Report" }];
+    const tabs = [{ key: "summary", label: "Summary report" }];
   result.items.forEach((item, index) => {
-    tabs.push({ key: `item-${index}`, label: item.image_id || `Bild ${index + 1}` });
+      tabs.push({ key: `item-${index}`, label: item.image_id || `Image ${index + 1}` });
   });
   tabs.forEach((tab, index) => {
     const button = document.createElement("button");
@@ -575,7 +575,7 @@ function renderTabContent(result, key) {
     ? `<h4>LLM-Output</h4><pre style="white-space: pre-wrap; font-family: 'Space Mono', monospace;">${
         item.analysis.gpt_response
       }</pre>`
-    : `<p class="disclaimer">ML-only: Kein LLM-Text für dieses Bild.</p>`;
+    : `<p class="disclaimer">ML-only: no LLM text for this image.</p>`;
   dom.resultDisplay.innerHTML = `
     <h3>${item.image_id}</h3>
     <p><strong>Modell:</strong> ${item.analysis?.teachable_model?.name || "OPENCORE"}</p>
@@ -831,7 +831,7 @@ async function apiRequest(path, options = {}) {
 }
 
 function renderResultPlaceholder() {
-  dom.resultDisplay.innerHTML = `<p class="disclaimer">Noch keine Analyse durchgeführt.</p>`;
+  dom.resultDisplay.innerHTML = `<p class="disclaimer">No analysis yet.</p>`;
   setMlDebugMessage([]);
 }
 
@@ -902,7 +902,7 @@ function renderStreamList() {
     viewBtn.textContent = "JSON";
     viewBtn.addEventListener("click", () => {
       if (!stream.last_result) {
-        showToast("Noch kein Resultat für diesen Stream.");
+        showToast("No result for this stream yet.");
         return;
       }
       openJsonFullscreen(stream.last_result);
@@ -978,7 +978,7 @@ async function stopStream(streamId) {
 async function triggerStream(streamId) {
   try {
     await apiRequest(`/api/opencore/streams/${streamId}/trigger`, { method: "POST" });
-    showToast("Analyse ausgelöst.");
+    showToast("Analysis triggered.");
     loadStreams();
   } catch (error) {
     showToast(`Trigger fehlgeschlagen: ${error.message}`);
