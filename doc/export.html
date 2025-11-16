@@ -1,82 +1,59 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Export-Funktionen · OPENCORE Analyzer</title>
+    <title>Export · OPENCORE Analyzer</title>
     <style>
-      body {
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        margin: 0 auto;
-        max-width: 960px;
-        padding: 2.5rem;
-        background: #fff;
-        color: #111527;
-        line-height: 1.6;
-      }
-      header {
-        border-bottom: 2px solid #111527;
-        margin-bottom: 2rem;
-      }
-      nav a {
-        margin-right: 1rem;
-        color: #0d5c63;
-        text-decoration: none;
-      }
-      pre {
-        background: #0f172a;
-        color: #f8fafc;
-        padding: 1rem;
-        border-radius: 8px;
-        overflow-x: auto;
-      }
+      body { font-family: "Space Grotesk", system-ui, sans-serif; margin: 0 auto; max-width: 960px; padding: 2.5rem; line-height: 1.6; }
+      header { border-bottom: 2px solid #0f172a; margin-bottom: 2rem; }
+      pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+      .doc-nav a { margin-right: 1rem; color: #0d5c63; text-decoration: none; font-weight: 600; }
     </style>
   </head>
   <body>
     <header>
-      <h1>Export-Funktionen</h1>
-      <p>Reports können als JSON, PDF oder Share-Link weitergegeben werden.</p>
-      <nav>
-        <a href="/doc/index.html">Zurück</a>
-        <a href="/doc/home_automation.html">Home-Automation</a>
+      <h1>Export Options</h1>
+      <p>Download JSON, create PDF reports, and share analyses via link.</p>
+      <nav class="doc-nav">
+        <a href="/doc/index.html">Index</a>
+        <a href="/doc/prompts.html">Prompts</a>
+        <a href="/doc/batch.html">Batch</a>
+        <a href="/doc/debug.html">Debug</a>
+        <a href="/doc/api_token_mode.html">API Tokens</a>
+        <a href="/doc/ui.html">UI</a>
+        <a href="/doc/export.html">Export</a>
+        <a href="/doc/streams.html">Streams</a>
+        <a href="/doc/models.html">Models</a>
+        <a href="/doc/modules.html">Add-ons</a>
+        <a href="/doc/raspberry.html">Raspberry Pi</a>
+        <a href="/doc/home_automation.html">Home Automation</a>
       </nav>
     </header>
 
     <section>
-      <h2>JSON-Download</h2>
+      <h2>JSON download</h2>
       <ul>
-        <li>Button „JSON herunterladen“ anklicken.</li>
-        <li>Das UI generiert aus dem aktuellen Ergebnis eine Datei <code>opencore-report.json</code>.</li>
-        <li>Bei Batch-Analysen enthält sie Summary und alle Items.</li>
+        <li>Click “Download JSON” near the result.</li>
+        <li>The UI stringifies the current output and saves it with a timestamped filename.</li>
       </ul>
     </section>
 
     <section>
-      <h2>PDF-Report</h2>
+      <h2>PDF report</h2>
       <ul>
-        <li>Button „PDF-Report“ erstellt ein PDF direkt im Browser.</li>
-        <li>Inhalt: Datum/Uhrzeit, ausgewähltes Modell, Summary, auf Wunsch verkürzte Einzelresultate.</li>
-        <li>Die Generierung nutzt <code>jsPDF</code> clientseitig, es verlassen keine Daten den Browser.</li>
+        <li>Hit “Create PDF”. The browser generates a PDF with date, model name, summary, and per-image highlights.</li>
+        <li>Ideal for quick sharing or attaching to tickets.</li>
       </ul>
     </section>
 
     <section>
-      <h2>Share-Link</h2>
-      <ol>
-        <li>„Share-Link erzeugen“ klicken.</li>
-        <li>Das Frontend sendet den Report an <code>/api/opencore/share</code>.</li>
-        <li>Die Antwort enthält eine URL <code>/share/&lt;id&gt;</code> und einen Copy-Button.</li>
-        <li>Der Viewer lädt die Daten serverseitig und zeigt sie in einer lesbaren Karte an.</li>
-      </ol>
-      <pre><code>POST /api/opencore/share
-{
-  "payload": { ... Analyse-JSON ... }
-}
-
-Antwort:
-{
-  "share_id": "abc123", "url": "/share/abc123"
-}</code></pre>
-      <p>Share-Daten liegen serverseitig als JSON-Dateien und können bei Bedarf manuell gelöscht werden.</p>
+      <h2>Share link</h2>
+      <p>Endpoint: <code>POST /api/opencore/share</code></p>
+      <ul>
+        <li>Sends the current analysis to the backend.</li>
+        <li>Returns a <code>share_id</code> and URL.</li>
+        <li>Open the link or send it to teammates; the static viewer renders the stored payload.</li>
+      </ul>
     </section>
   </body>
 </html>

@@ -58,67 +58,60 @@ try:  # pragma: no cover - optional dependency for network mode
 except ImportError:  # pragma: no cover - handled at runtime when needed
     ServiceInfo = None  # type: ignore
     Zeroconf = None  # type: ignore
-
-MODEL_PATH = os.getenv("TEACHABLE_MODEL_PATH", "./models/teachable_model")
-DEFAULT_CLASS_NAMES: List[str] = ["class_1", "class_2", "class_3"]
-GPT_MODEL = os.getenv("OPENAI_GPT_MODEL", "gpt-4.1-mini")
-BASE_DIR = Path(__file__).resolve().parent
-SIMPLE_UI_PATH = BASE_DIR / "static" / "index.html"
-CONFIG_UI_PATH = BASE_DIR / "static" / "config.html"
-COMPLETIONS_UI_PATH = BASE_DIR / "static" / "completions.html"
-SHARE_UI_PATH = BASE_DIR / "static" / "share.html"
-TM_MODELS_DIR = BASE_DIR / "TM-models"
-TM_MODELS_DIR.mkdir(parents=True, exist_ok=True)
-TM_REGISTRY_PATH = TM_MODELS_DIR / "registry.json"
-TFJS_REQUIRED_FILES = {"metadata.json", "model.json", "weights.bin"}
-TFJS_REQUIRED_FILES_LOWER = {name.lower() for name in TFJS_REQUIRED_FILES}
-KERAS_LABEL_FILE = "labels.txt"
-KERAS_SUFFIXES = {".keras", ".h5", ".hdf5"}
-KERAS_CUSTOM_OBJECTS: dict[str, Any] | None = None
-NETWORK_CONFIG_FILENAME = "network-config.json"
-SETTINGS_PATH = BASE_DIR / "app-settings.json"
-DOCS_DIR = BASE_DIR / "doc"
-SHARE_STORE_DIR = BASE_DIR / "share-store"
-DOCS_DIR.mkdir(parents=True, exist_ok=True)
-SHARE_STORE_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_TYPE_ALIASES = {
-    "trichome": "trichome",
-    "trichomen": "trichome",
-    "trichomen analyse": "trichome",
-    "trichome analysis": "trichome",
-    "trichomes": "trichome",
-    "health": "health",
-    "healthcare": "health",
-    "gesundheit": "health",
-}
-NETWORK_DEFAULT_CONFIG = {
-    "enabled": False,
-    "hostname": "ottcolab.local",
-    "port": 8000,
-    "ip": None,
-    "url": None,
-}
-STREAM_CAPTURE_INTERVAL_DEFAULT = 5.0
-STREAM_BATCH_INTERVAL_DEFAULT = 30.0
-STREAM_BUFFER_MAX = 24
-DEFAULT_LLM_CONFIG = {
-    "provider": "openai",
-    "apiBase": "",
-    "model": "",
-    "apiKey": "",
-    "vision": "yes",
-    "systemPrompt": "",
-}
-LLM_ALLOWED_PROVIDERS = {"openai", "ollama", "lmstudio"}
-OPENAI_BASE_URL = "https://api.openai.com/v1"
-OLLAMA_BASE_URL = "http://127.0.0.1:11434"
-LMSTUDIO_BASE_URL = "http://127.0.0.1:1234/v1"
-LLM_HTTP_TIMEOUT = int(os.getenv("OTTC_LLM_TIMEOUT", "90"))
-ANALYZER_SYSTEM_PROMPT = (
-    "Du wertest Cannabisbilder für ottcouture.eu aus. Kombiniere Teachable-Machine-"
-    "Klassifikationen mit dem Nutzerprompt, beschreibe Risiken und empfiehl klare,"
-    "nicht-medizinische Maßnahmen."
+from opencore.config import (
+    ANALYZER_SYSTEM_PROMPT,
+    BASE_DIR,
+    COMPLETIONS_UI_PATH,
+    CONFIG_UI_PATH,
+    DEFAULT_CLASS_NAMES,
+    DEFAULT_LLM_CONFIG,
+    DOCS_DIR,
+    GPT_MODEL,
+    KERAS_LABEL_FILE,
+    KERAS_SUFFIXES,
+    LLM_ALLOWED_PROVIDERS,
+    LLM_HTTP_TIMEOUT,
+    LMSTUDIO_BASE_URL,
+    LOG_LEVEL,
+    MODEL_PATH,
+    MODEL_TYPE_ALIASES,
+    NETWORK_CONFIG_FILENAME,
+    NETWORK_DEFAULT_CONFIG,
+    OLLAMA_BASE_URL,
+    OPENAI_BASE_URL,
+    SETTINGS_PATH,
+    SHARE_STORE_DIR,
+    SHARE_UI_PATH,
+    SIMPLE_UI_PATH,
+    STREAM_BATCH_INTERVAL_DEFAULT,
+    STREAM_BUFFER_MAX,
+    STREAM_CAPTURE_INTERVAL_DEFAULT,
+    TFJS_REQUIRED_FILES,
+    TFJS_REQUIRED_FILES_LOWER,
+    TM_MODELS_DIR,
+    TM_REGISTRY_PATH,
+    UPSTREAM_REPO_BRANCH,
+    UPSTREAM_REPO_URL,
 )
+from opencore.logging_utils import build_logger
+from opencore.settings_store import (
+    bootstrap_app_settings,
+    build_llm_settings_payload,
+    delete_llm_profile,
+    get_active_llm_profile_id,
+    get_default_model_id,
+    get_llm_config,
+    get_llm_profiles,
+    normalize_llm_config,
+    persist_llm_config,
+    reset_llm_config,
+    set_active_llm_profile,
+    set_default_model_id,
+    upsert_llm_profile,
+)
+from opencore.update_check import ensure_latest_code_checked_out
+
+KERAS_CUSTOM_OBJECTS: dict[str, Any] | None = None
 
 _model_cache: Dict[str, Any] = {}
 _client: OpenAI | None = None
@@ -126,24 +119,16 @@ _client_signature: tuple[str | None, str | None] | None = None
 _network_zeroconf: Zeroconf | None = None
 _network_service: ServiceInfo | None = None
 _network_runtime_config: Dict[str, Any] = {}
-_app_settings: Dict[str, Any] = {}
 _stream_lock = threading.Lock()
 
-LOG_LEVEL = os.getenv("OTTC_LOG_LEVEL", "INFO").upper()
-UPSTREAM_REPO_URL = os.getenv("OTTC_REPO_URL", "https://github.com/ottco-dev/ottcops.git")
-UPSTREAM_REPO_BRANCH = os.getenv("OTTC_REPO_BRANCH", "main")
 
+logger = build_logger()
 
-def _build_logger() -> logging.Logger:
-    level = getattr(logging, LOG_LEVEL, logging.INFO)
-    if not logging.getLogger().handlers:
-        logging.basicConfig(level=level)
-    else:
-        logging.getLogger().setLevel(level)
-    return logging.getLogger("ottcouture.app")
+app = FastAPI(title="OPENCORE Analyzer")
 
-
-logger = _build_logger()
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/doc", StaticFiles(directory=DOCS_DIR, html=True), name="doc")
+app.mount("/share-store", StaticFiles(directory=SHARE_STORE_DIR), name="share-store")
 
 
 def get_keras_custom_objects() -> dict[str, Any]:
@@ -387,135 +372,7 @@ class StreamManager:
 
 stream_manager = StreamManager()
 atexit.register(stream_manager.stop_all)
-
-
-def _run_git_command(args: Sequence[str]) -> tuple[int, str, str]:
-    """Execute a git command and return (returncode, stdout, stderr)."""
-
-    try:
-        proc = subprocess.run(
-            args,
-            cwd=str(BASE_DIR),
-            capture_output=True,
-            check=False,
-            text=True,
-        )
-        return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
-    except FileNotFoundError:
-        return 1, "", "git executable not available"
-
-
-def _get_local_commit_hash() -> Optional[str]:
-    code, stdout, stderr = _run_git_command(["git", "rev-parse", "HEAD"])
-    if code == 0:
-        return stdout
-    logger.debug("Konnte lokalen Commit nicht bestimmen: %s", stderr)
-    return None
-
-
-def _get_remote_commit_hash() -> Optional[str]:
-    code, stdout, stderr = _run_git_command(
-        ["git", "ls-remote", UPSTREAM_REPO_URL, UPSTREAM_REPO_BRANCH]
-    )
-    if code == 0 and stdout:
-        return stdout.split()[0]
-    logger.debug("Konnte Remote-Commit nicht bestimmen: %s", stderr)
-    return None
-
-
-def _prompt_user_for_update(remote_hash: str) -> bool:
-    """Ask the operator whether an update should be pulled."""
-
-    prompt = (
-        f"Eine neue Version ({remote_hash[:7]}) ist verfügbar. Jetzt aktualisieren? [y/N]: "
-    )
-    try:
-        response = input(prompt)
-    except EOFError:
-        logger.info("Keine interaktive Eingabe verfügbar – Update wird übersprungen.")
-        return False
-    return response.strip().lower() in {"y", "yes", "j", "ja"}
-
-
-def _perform_git_update() -> None:
-    logger.info("Starte git pull von %s (%s)...", UPSTREAM_REPO_URL, UPSTREAM_REPO_BRANCH)
-    code, stdout, stderr = _run_git_command(
-        ["git", "pull", UPSTREAM_REPO_URL, UPSTREAM_REPO_BRANCH]
-    )
-    if code != 0:
-        logger.error("git pull fehlgeschlagen: %s", stderr or stdout)
-    else:
-        logger.info("Repository erfolgreich aktualisiert: %s", stdout)
-
-
-def ensure_latest_code_checked_out() -> None:
-    """Check GitHub for new commits and prompt for update before app start."""
-
-    if os.getenv("OTTC_SKIP_UPDATE_CHECK", "0") in {"1", "true", "True"}:
-        logger.info("Update-Check übersprungen (OTTC_SKIP_UPDATE_CHECK=1).")
-        return
-
-    local_hash = _get_local_commit_hash()
-    remote_hash = _get_remote_commit_hash()
-
-    if not local_hash or not remote_hash:
-        logger.info("Update-Check konnte nicht abgeschlossen werden (fehlende Git-Infos).")
-        return
-
-    if local_hash == remote_hash:
-        logger.info("OPENCORE Analyzer ist bereits auf dem neuesten Stand (%s).", local_hash[:7])
-        return
-
-    logger.info(
-        "Neue Version erkannt. Lokal %s, Remote %s.", local_hash[:7], remote_hash[:7]
-    )
-    if _prompt_user_for_update(remote_hash):
-        _perform_git_update()
-    else:
-        logger.info("Update abgelehnt – aktuelle Version bleibt aktiv.")
-
-
 ensure_latest_code_checked_out()
-
-app = FastAPI(
-    title="Teachable Machine + GPT Analyzer",
-    description=(
-        "Upload an image plus a user prompt and combine the Teachable Machine "
-        "classification with a GPT response. Interactive Swagger UI is available "
-        "at /docs."
-    ),
-    version="1.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
-app.mount("/doc", StaticFiles(directory=DOCS_DIR, html=True), name="doc")
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-
-
-class NetworkPayload(BaseModel):
-    hostname: str
-    port: int = 8000
-
-
-class CompletionPayload(BaseModel):
-    prompt: str
-    llm_profile_id: Optional[str] = None
-
-
-class SharePayload(BaseModel):
-    payload: Dict[str, Any]
-
-
-class StreamCreatePayload(BaseModel):
-    label: Optional[str] = None
-    source_url: str
-    source_type: str = "snapshot"
-    analysis_mode: str = "hybrid"
-    prompt: Optional[str] = ""
-    model_id: Optional[str] = None
-    llm_profile_id: Optional[str] = None
-    capture_interval: float = STREAM_CAPTURE_INTERVAL_DEFAULT
-    batch_interval: float = STREAM_BATCH_INTERVAL_DEFAULT
 
 
 class LLMConfigPayload(BaseModel):
@@ -530,171 +387,6 @@ class LLMProfilePayload(BaseModel):
     name: Optional[str] = None
     config: Dict[str, Any] = Field(default_factory=dict)
     activate: bool = True
-
-
-def normalize_llm_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """Sanitize provider settings and merge them with defaults."""
-
-    config = DEFAULT_LLM_CONFIG.copy()
-    if isinstance(payload, dict):
-        for key in config:
-            if key not in payload:
-                continue
-            value = payload[key]
-            if value is None:
-                continue
-            if isinstance(value, str):
-                value = value.strip()
-            config[key] = value
-
-    provider = str(config.get("provider") or DEFAULT_LLM_CONFIG["provider"]).lower()
-    if provider not in LLM_ALLOWED_PROVIDERS:
-        provider = DEFAULT_LLM_CONFIG["provider"]
-    config["provider"] = provider
-
-    vision_raw = str(config.get("vision") or DEFAULT_LLM_CONFIG["vision"]).lower()
-    config["vision"] = "manual" if vision_raw == "manual" else DEFAULT_LLM_CONFIG["vision"]
-
-    for text_key in ("apiBase", "model", "apiKey", "systemPrompt"):
-        config[text_key] = config.get(text_key) or ""
-
-    return config
-
-
-def normalize_llm_profile(entry: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Ensure a profile dict always contains id, name and normalized config."""
-
-    if not isinstance(entry, dict):
-        return None
-    config = normalize_llm_config(entry.get("config"))
-    profile_id = str(entry.get("id") or entry.get("profile_id") or uuid.uuid4().hex)
-    name = (entry.get("name") or f"Profil {profile_id[:6]}").strip()
-    return {"id": profile_id, "name": name or profile_id, "config": config}
-
-
-def normalize_llm_profiles(raw: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-    profiles: List[Dict[str, Any]] = []
-    if isinstance(raw, list):
-        for entry in raw:
-            normalized = normalize_llm_profile(entry)
-            if normalized:
-                profiles.append(normalized)
-    return profiles
-
-
-def load_app_settings() -> Dict[str, Any]:
-    defaults = {
-        "default_model_id": None,
-        "llm_config": DEFAULT_LLM_CONFIG.copy(),
-        "llm_profiles": [],
-        "active_llm_profile": None,
-    }
-    if SETTINGS_PATH.is_file():
-        try:
-            data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-            defaults.update({k: v for k, v in data.items() if k != "llm_config"})
-            defaults["llm_config"] = normalize_llm_config(data.get("llm_config"))
-            defaults["llm_profiles"] = normalize_llm_profiles(data.get("llm_profiles"))
-            defaults["active_llm_profile"] = data.get("active_llm_profile")
-            if defaults["active_llm_profile"] and not any(
-                p.get("id") == defaults["active_llm_profile"] for p in defaults["llm_profiles"]
-            ):
-                defaults["active_llm_profile"] = None
-        except json.JSONDecodeError:
-            logger.warning("app-settings.json konnte nicht geparst werden, fallback auf Defaults.")
-    return defaults
-
-
-def save_app_settings(data: Dict[str, Any]) -> None:
-    SETTINGS_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-
-
-def get_llm_profiles() -> List[Dict[str, Any]]:
-    profiles = normalize_llm_profiles(_app_settings.get("llm_profiles") or [])
-    _app_settings["llm_profiles"] = profiles
-    return profiles
-
-
-def get_active_llm_profile_id() -> Optional[str]:
-    return _app_settings.get("active_llm_profile")
-
-
-def get_llm_config(profile_id: Optional[str] = None) -> Dict[str, Any]:
-    profiles = get_llm_profiles()
-    target_id = profile_id or get_active_llm_profile_id()
-    if target_id:
-        for profile in profiles:
-            if profile.get("id") == target_id:
-                return normalize_llm_config(profile.get("config"))
-    return normalize_llm_config(_app_settings.get("llm_config"))
-
-
-def set_active_llm_profile(profile_id: Optional[str]) -> Optional[str]:
-    profiles = get_llm_profiles()
-    if profile_id is None:
-        _app_settings["active_llm_profile"] = None
-    elif any(p.get("id") == profile_id for p in profiles):
-        _app_settings["active_llm_profile"] = profile_id
-    else:
-        raise HTTPException(status_code=404, detail="Profil nicht gefunden.")
-    save_app_settings(_app_settings)
-    return _app_settings.get("active_llm_profile")
-
-
-def upsert_llm_profile(
-    config: Dict[str, Any], name: Optional[str] = None, profile_id: Optional[str] = None, activate: bool = True
-) -> Dict[str, Any]:
-    profiles = get_llm_profiles()
-    normalized = normalize_llm_profile({"config": config, "id": profile_id, "name": name})
-    if normalized is None:
-        raise HTTPException(status_code=400, detail="Profil konnte nicht normalisiert werden.")
-    updated = False
-    for idx, profile in enumerate(profiles):
-        if profile.get("id") == normalized["id"]:
-            profiles[idx] = normalized
-            updated = True
-            break
-    if not updated:
-        profiles.append(normalized)
-    _app_settings["llm_profiles"] = profiles
-    if activate:
-        _app_settings["active_llm_profile"] = normalized["id"]
-    save_app_settings(_app_settings)
-    return normalized
-
-
-def delete_llm_profile(profile_id: str) -> List[Dict[str, Any]]:
-    profiles = get_llm_profiles()
-    filtered = [p for p in profiles if p.get("id") != profile_id]
-    if len(filtered) == len(profiles):
-        raise HTTPException(status_code=404, detail="Profil nicht gefunden.")
-    _app_settings["llm_profiles"] = filtered
-    if _app_settings.get("active_llm_profile") == profile_id:
-        _app_settings["active_llm_profile"] = None
-    save_app_settings(_app_settings)
-    return filtered
-
-
-def persist_llm_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    normalized = normalize_llm_config(config)
-    _app_settings["llm_config"] = normalized
-    save_app_settings(_app_settings)
-    return normalized
-
-
-def reset_llm_config() -> Dict[str, Any]:
-    return persist_llm_config(DEFAULT_LLM_CONFIG.copy())
-
-
-def build_llm_settings_payload(message: Optional[str] = None) -> Dict[str, Any]:
-    payload = {
-        "config": get_llm_config(),
-        "profiles": get_llm_profiles(),
-        "active_profile_id": get_active_llm_profile_id(),
-    }
-    if message:
-        payload["message"] = message
-    return payload
 
 
 def get_effective_model_name(config: Dict[str, Any], fallback: str = GPT_MODEL) -> str:
@@ -1175,14 +867,14 @@ def disable_network_mode() -> Dict[str, Any]:
 
 
 _network_runtime_config = load_network_config_from_disk()
-_app_settings = load_app_settings()
+bootstrap_app_settings()
 
 
 def prime_default_teachable_model() -> None:
     """Warm the default model once during startup for faster ML-only calls."""
 
     try:
-        entry = resolve_model_entry(_app_settings.get("default_model_id"))
+        entry = resolve_model_entry(get_default_model_id())
         ensure_model_ready(entry)
     except HTTPException as exc:
         logger.info("Kein Default-Modell zum Vorwärmen verfügbar: %s", exc.detail)
@@ -1354,7 +1046,7 @@ def load_bundle_metadata(content_root: Path, bundle_type: str) -> Dict[str, Any]
 
 
 def list_tm_models() -> List[Dict[str, Any]]:
-    default_id = _app_settings.get("default_model_id")
+    default_id = get_default_model_id()
     enriched: List[Dict[str, Any]] = []
     for entry in load_tm_registry():
         enriched_entry = dict(entry)
@@ -1373,14 +1065,12 @@ def find_tm_entry(model_id: str) -> Optional[Dict[str, Any]]:
 
 def set_default_tm_model(model_id: str | None) -> Optional[Dict[str, Any]]:
     if model_id is None:
-        _app_settings["default_model_id"] = None
-        save_app_settings(_app_settings)
+        set_default_model_id(None)
         return None
     entry = find_tm_entry(model_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Modell wurde nicht gefunden.")
-    _app_settings["default_model_id"] = model_id
-    save_app_settings(_app_settings)
+    set_default_model_id(model_id)
     return entry
 
 
@@ -1631,7 +1321,7 @@ def resolve_model_entry(model_id: str | None = None) -> Dict[str, Any]:
         if candidate is None:
             raise HTTPException(status_code=404, detail="Unbekanntes Teachable Machine Modell.")
     elif not force_builtin:
-        default_id = _app_settings.get("default_model_id")
+        default_id = get_default_model_id()
         if default_id:
             candidate = next((entry for entry in registry if entry.get("id") == default_id), None)
     if candidate is None and registry and not force_builtin:
@@ -1921,7 +1611,7 @@ async def tm_models() -> JSONResponse:
     return JSONResponse(
         {
             "models": list_tm_models(),
-            "default_model_id": _app_settings.get("default_model_id"),
+            "default_model_id": get_default_model_id(),
             "has_builtin": Path(MODEL_PATH).exists(),
         }
     )
@@ -1930,7 +1620,7 @@ async def tm_models() -> JSONResponse:
 @app.post("/tm-models/default/{model_id}", response_class=JSONResponse)
 async def tm_models_set_default(model_id: str) -> JSONResponse:
     entry = set_default_tm_model(model_id)
-    return JSONResponse({"default_model_id": _app_settings.get("default_model_id"), "model": entry})
+    return JSONResponse({"default_model_id": get_default_model_id(), "model": entry})
 
 
 @app.delete("/tm-models/default", response_class=JSONResponse)
@@ -1995,11 +1685,10 @@ async def upload_tm_model(
     registry.append(entry)
     save_tm_registry(registry)
 
-    if _app_settings.get("default_model_id") is None:
-        _app_settings["default_model_id"] = entry["id"]
-        save_app_settings(_app_settings)
+    if get_default_model_id() is None:
+        set_default_model_id(entry["id"])
 
-    return JSONResponse({"message": "Modell gespeichert", "model": entry, "default_model_id": _app_settings.get("default_model_id")})
+    return JSONResponse({"message": "Modell gespeichert", "model": entry, "default_model_id": get_default_model_id()})
 
 
 @app.post("/api/opencore/analyze-batch", response_class=JSONResponse)

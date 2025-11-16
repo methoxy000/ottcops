@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Prompt-Templates · OPENCORE Analyzer</title>
+    <title>Prompt Templates · OPENCORE Analyzer</title>
     <style>
       body {
         font-family: "Space Grotesk", system-ui, sans-serif;
@@ -39,7 +39,7 @@
         border-radius: 8px;
         overflow-x: auto;
       }
-      nav a {
+      .doc-nav a {
         margin-right: 1rem;
         color: #0d5c63;
         text-decoration: none;
@@ -49,51 +49,61 @@
   </head>
   <body>
     <header>
-      <h1>Prompt-Templates</h1>
-      <p>Vorlagen beschleunigen Anfragen und stellen sicher, dass Analysen konsistent formuliert werden.</p>
-      <nav>
-        <a href="/doc/index.html">Zurück zur Übersicht</a>
-        <a href="/doc/batch.html">Batch-Analyse</a>
+      <h1>Prompt Templates</h1>
+      <p>Templates speed up requests and keep analyses consistent.</p>
+      <nav class="doc-nav">
+        <a href="/doc/index.html">Index</a>
+        <a href="/doc/prompts.html">Prompts</a>
+        <a href="/doc/batch.html">Batch</a>
+        <a href="/doc/debug.html">Debug</a>
+        <a href="/doc/api_token_mode.html">API Tokens</a>
+        <a href="/doc/ui.html">UI</a>
+        <a href="/doc/export.html">Export</a>
+        <a href="/doc/streams.html">Streams</a>
+        <a href="/doc/models.html">Models</a>
+        <a href="/doc/modules.html">Add-ons</a>
+        <a href="/doc/raspberry.html">Raspberry Pi</a>
+        <a href="/doc/home_automation.html">Home Automation</a>
       </nav>
     </header>
 
     <section>
-      <h2>Standard-Templates</h2>
+      <h2>Built-in Templates</h2>
       <table>
         <thead>
           <tr>
             <th>Label</th>
-            <th>Beschreibung</th>
+            <th>Description</th>
             <th>Prompt</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Trichome-Reifegrad</td>
-            <td>Bewertet Klar/Milchig/Amber-Verteilung und nennt das Erntefenster.</td>
+            <td>Trichome Maturity</td>
+            <td>Evaluates clear/milky/amber distribution and suggests a harvest window.</td>
             <td>
-              <pre><code>Analysiere bitte die Trichome auf Klar/Milchig/Amber, beschreibe die Verteilung und schätze das optimale Erntefenster.</code></pre>
+              <pre><code>Analyze the trichomes for Clear/Milky/Amber, describe the distribution, and estimate the optimal harvest window.</code></pre>
             </td>
           </tr>
           <tr>
-            <td>Bud-Health / Schimmel</td>
-            <td>Identifiziert Schimmel, Fäulnis oder andere Bud-Probleme.</td>
+            <td>Bud Health / Mold</td>
+            <td>Identifies mold, rot, or other bud issues.</td>
             <td>
-              <pre><code>Untersuche das Bild auf Schimmel, Fäulnis oder andere Probleme der Bud-Gesundheit und beschreibe die Risiken.</code></pre>
+              <pre><code>Inspect the image for mold, rot, or other bud-health problems and describe the risks.</code></pre>
             </td>
           </tr>
           <tr>
-            <td>Pest-Detection</td>
-            <td>Sucht nach sichtbaren Schädlingen und typischen Schadmustern.</td>
+            <td>Pest Detection</td>
+            <td>Looks for visible pests or typical damage patterns.</td>
             <td>
-              <pre><code>Analysiere das Bild auf sichtbare Schädlinge oder typische Schadbilder und beschreibe die Befunde.</code></pre>
+              <pre><code>Analyze the image for visible pests or typical damage patterns and describe the findings.</code></pre>
             </td>
           </tr>
           <tr>
             <td>Bag Appeal</td>
-            <td>Fokussiert auf Trim, Struktur, Frost und Farbspiel.</td>
+            <td>Visual rating of trim, structure, frost, and color.</td>
             <td>
-              <pre><code>Bewerte das visuelle Erscheinungsbild (Bag Appeal) der Buds: Trim, Struktur, Trichomdichte, Farbspiel, Gesamteindruck.</code></pre>
+              <pre><code>Rate the bag appeal: trim, structure, trichome density, color play, and overall impression.</code></pre>
             </td>
           </tr>
         </tbody>
@@ -101,33 +111,30 @@
     </section>
 
     <section>
-      <h2>Templates anwenden</h2>
-      <ol>
-        <li>Auf der Analyzer-Seite das Dropdown "Prompt-Template" öffnen.</li>
-        <li>Gewünschte Vorlage auswählen.</li>
-        <li>Der Prompt-Textarea wird automatisch befüllt und kann anschließend ergänzt werden.</li>
-      </ol>
-      <p>Ein Wechsel überschreibt den vorhandenen Prompt. Speichere individuelle Anpassungen über die Funktion "Template speichern".</p>
+      <h2>When to use which template</h2>
+      <ul>
+        <li><strong>Maturity:</strong> End of bloom checks; pair with macro photos.</li>
+        <li><strong>Mold:</strong> Any bud that looks off; good for intake QA.</li>
+        <li><strong>Pests:</strong> Leaf close-ups or canopy overviews for scouting.</li>
+        <li><strong>Bag Appeal:</strong> Finished product reviews or social-ready captures.</li>
+      </ul>
     </section>
 
     <section>
-      <h2>Eigene Templates verwalten</h2>
+      <h2>Custom templates (per browser)</h2>
+      <p>
+        You can store your own prompts in the browser. Use the “save template” button next to the prompt textarea, give it a label and description, and it will appear in the template selector. Everything is stored in <code>localStorage</code> for that browser profile.
+      </p>
       <ul>
-        <li>Button „Eigenes Template speichern“ anklicken.</li>
-        <li>Dialog ausfüllen (Titel + Beschreibung) und bestätigen.</li>
-        <li>Vorlagen werden lokal im Browser gespeichert (<code>localStorage</code>) und nur dort angezeigt.</li>
-        <li>Eigenes Template löschen: In der Template-Liste auf das Papierkorb-Icon klicken.</li>
+        <li><strong>Save:</strong> Type your prompt → click “save template” → pick a name and summary.</li>
+        <li><strong>Apply:</strong> Choose it from the dropdown to replace the prompt textarea.</li>
+        <li><strong>Delete:</strong> Use the remove icon next to a custom entry to clear it.</li>
       </ul>
-      <p>Die Daten verlassen das Gerät nicht. Ideal für interne Playbooks oder kurzfristige Kampagnen.</p>
     </section>
 
     <section>
-      <h2>Tipps für gute Prompts</h2>
-      <ul>
-        <li>Kombiniere Bildkontext (Anbauphase, Lichtbedingungen) mit einer klaren Fragestellung.</li>
-        <li>Definiere erwartete Ausgabe-Abschnitte (z. B. "Risiken", "Empfehlungen").</li>
-        <li>Vermeide medizinische Aussagen – fokussiere auf Anbau, Hygiene und Produktqualität.</li>
-      </ul>
+      <h2>Mini demo</h2>
+      <p>Pick any template in the analyzer UI; the textarea will be filled instantly and can still be edited before you run an analysis.</p>
     </section>
   </body>
 </html>

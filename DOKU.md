@@ -1,90 +1,55 @@
-# Projekt-Dokumentation
+# Project Documentation
 
-Diese Datei beschreibt detailliert, wie die FastAPI-Anwendung aufgebaut ist, wie die
-Modelle vorbereitet werden und wie die Umgebung zu konfigurieren ist.
+This file describes how the FastAPI app is structured, how models are prepared, and how to configure the environment.
 
-## 1. Voraussetzungen
+## 1. Requirements
 - Python 3.10+
-- Zugriff auf einen trainierten Teachable Machine Bildklassifikator als TensorFlow
-  SavedModel oder Keras-Modell.
-- OpenAI API Key mit Zugriff auf ein multimodales Modell (z. B. `gpt-4.1-mini`).
-- Für Video-Streams: optional OpenCV (über `opencv-python-headless`) und HTTP-Zugriff auf Snapshot-/RTSP-Quellen.
+- Access to a trained Teachable Machine image classifier as a TensorFlow SavedModel or Keras model.
+- OpenAI API key with access to a multimodal model (for example `gpt-4.1-mini`).
+- For video streams: optional OpenCV (`opencv-python-headless`) and HTTP access to snapshot/RTSP sources.
 
 ## 2. Installation
-1. Repository auschecken und in das Projektverzeichnis wechseln.
-2. Virtuelle Umgebung erstellen:
+1. Check out the repository and switch into the project directory.
+2. Create a virtual environment:
    ```bash
    python -m venv .venv
    source .venv/bin/activate
    ```
-3. Abhängigkeiten installieren:
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-## 3. Modelle & Labels
-- Primärer Ablageort ist `TM-models/`. Das Upload-Feature entpackt ZIPs (entweder TFJS-Bundles mit `metadata.json`, `model.json`, `weights.bin` **oder** Keras-Pakete mit `keras_model.h5` und `labels.txt`) in einen Unterordner und schreibt zusätzlich einen Eintrag in `TM-models/registry.json`.
-- Falls kein Eintrag aktiv ist, nutzt der Analyzer `TEACHABLE_MODEL_PATH` (z. B. `./models/teachable_model`).
-- Labels werden automatisch aus `metadata.json` oder – bei Keras-Paketen – aus `labels.txt` gelesen. Fehlen Daten, erzeugt der Service neutrale Bezeichner (`class_1`, `class_2`, …).
+## 3. Models & Labels
+- Primary location is `TM-models/`. The upload feature unzips bundles (TFJS with `metadata.json`, `model.json`, `weights.bin` **or** Keras packages with `keras_model.h5` and `labels.txt`) into a subfolder and writes an entry to `TM-models/registry.json`.
+- If no entry is active, the analyzer falls back to `TEACHABLE_MODEL_PATH` (for example `./models/teachable_model`).
+- Labels are pulled automatically from `metadata.json` or—when using Keras packages—from `labels.txt`. If data is missing, the service generates neutral names (`class_1`, `class_2`, …).
 
-## 4. Konfiguration
-| Variable | Beschreibung |
+## 4. Configuration
+| Variable | Description |
 | --- | --- |
-| `OPENAI_API_KEY` | Pflicht für Cloud-LLMs und den OTTO-Chat. |
-| `OPENAI_GPT_MODEL` | Optional. Default ist `gpt-4.1-mini`. |
-| `TEACHABLE_MODEL_PATH` | Optionaler Fallback-Pfad für ein lokales TM-Modell. |
+| `OPENAI_API_KEY` | Required for cloud LLMs and the OTTO chat. |
+| `OPENAI_GPT_MODEL` | Optional. Default is `gpt-4.1-mini`. |
+| `TEACHABLE_MODEL_PATH` | Optional fallback path for a local TM model. |
 
-Weitere Persistenzdateien:
-- `app-settings.json`: speichert das Standardmodell und die Provider-/Prompt-Konfiguration aus `/api/settings/llm`.
-- `network-config.json`: merkt sich den mDNS-Status (Hostname/Port für `ottcolab.local`).
+Additional persistence files:
+- `app-settings.json`: stores the default model and provider/prompt configuration from `/api/settings/llm`.
+- `network-config.json`: remembers the mDNS status (hostname/port for `ottcolab.local`).
 
-Die in `app-settings.json` hinterlegten Providerdaten werden für sämtliche LLM-Aufrufe (Analyzer, Batch-/Stream-Verarbeitung und OTTO-Chat) herangezogen und überstehen so Browserwechsel oder Server-Restarts. Mehrere Profile kannst du im Config Hub anlegen/aktivieren; die Dropdowns in Analyzer, Streams und OTTO greifen dann genau dieses Profil.
+## 5. LLM Settings
+- Managed via `/api/settings/llm` and the config console.
+- Multiple profiles are supported (OpenAI, Ollama, LM Studio). Each stores base URL, model name, and system prompt.
+- Profiles can be activated per run or set as the default for Analyzer, Streams, and OTTO chat.
 
-## 5. Starten des Servers
-```bash
-export OPENAI_API_KEY="sk-..."
-uvicorn app:app --host 0.0.0.0 --port 8000
-```
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-- Simple HTML UI: http://localhost:8000/
+## 6. Streams & Automation
+- Stream jobs are created through the UI or `/api/opencore/streams*` endpoints.
+- Jobs can snapshot cameras every few seconds and batch analyses roughly every 30 seconds.
+- Results feed into the same JSON pipeline used by single-image requests.
 
-## 6. HTML-Demo
-- `static/index.html`: Analyzer UI mit Modell-Dropdown (ruft `/analyze`).
-- `static/config.html`: Konsole für Provider, System-Prompts, TM-Depot und mDNS.
-- `static/completions.html`: OTTO Grow Chat (ruft `/api/completions`).
-- UI enthält zusätzlich den Analysemodus (Hybrid/ML-only), Export-Buttons sowie das Stream-Dashboard (Form + Liste).
+## 7. Custom Modules
+- Add Python modules under `opencore/` and include them from `app.py`.
+- Mirror the response shape of existing endpoints (status + payload + optional debug) so the UI can consume them immediately.
+- Front-end hooks belong in `static/index.html` or `static/config.html` with logic in `static/js/app.js`.
 
-## 7. Fehlerbehandlung
-- **400**: fehlender Prompt oder Bild.
-- **500**: TensorFlow- oder Preprocessing-Fehler.
-- **502**: Probleme beim angebundenen LLM-Provider (OpenAI, Ollama, LM Studio …).
-- **422**: ungültiger Analysemodus oder Stream-Payload (z. B. fehlender Prompt im Hybrid-Stream).
-
-## 8. Deployment-Hinweise
-- TensorFlow ist speicherintensiv; setzen Sie passende Container-Limits.
-- `OPENAI_API_KEY` niemals commiten, sondern per Secret Management bereitstellen.
-- Optional: Gunicorn/Uvicorn-Worker über `gunicorn -k uvicorn.workers.UvicornWorker`.
-- Streams laufen als Python-Threads. Bei Deployment hinter Supervisor/Kubernetes sollten Worker mit `--workers 1` betrieben werden,
-  damit nur ein Scheduler pro Instanz arbeitet.
-
-## 11. Stream-Automation & ML-only
-- Endpoints:
-  - `POST /analyze` bzw. `/api/opencore/analyze-ml` unterstützen das Feld `analysis_mode` (Werte `hybrid` oder `ml`).
-  - `POST /api/opencore/analyze-batch` akzeptiert neben `files[]` ebenfalls `analysis_mode`.
-  - `GET/POST/DELETE /api/opencore/streams` + `POST /api/opencore/streams/<id>/trigger` verwalten Snapshot/Video-Jobs.
-- Die StreamManager-Threads speichern bis zu 24 Frames. Alle 30 Sekunden (Standard) wird ein Batch-Report erzeugt.
-- Für Snapshot-Quellen genügt `requests`. Für Video muss OpenCV verfügbar sein.
-- UI (Section "Stream-Orchestrierung") spiegelt den Status wider und erlaubt JSON-Preview, Trigger oder Stop.
-
-## 9. Weiterentwicklung
-- Optionale Auth-Schicht vor `/config`, `/tm-models/*` und `/api/completions`.
-- Health-Checks für Teachable-Machine-Modelle (z. B. automatische Tests nach Upload).
-- Erweiterte Validierung/Verschlüsselung der serverseitig gespeicherten Provider-Konfiguration (`/api/settings/llm`).
-
-## 10. Lizenz
-- Die Anwendung steht unter der [GNU Affero General Public License v3.0](LICENSE).
-- OTTCOUTURE behält sämtliche Rechte am Markennamen und Branding.
-- Änderungen oder Erweiterungen müssen offen bleiben, wieder unter der AGPL
-  veröffentlicht werden und eine eindeutige Attribution an OTTCOUTURE enthalten.
-- Nutzungshinweis: Der OPENCORE Analyzer ist ausschließlich für private Einzelnutzer:innen sowie Developer:innen zu Testzwecken vorgesehen. Cannabis Social Clubs (CSCs) und Unternehmen müssen vor jeglicher kommerzieller Verwendung eine Lizenz direkt bei **ottcouture.eu** (otcdmin@outlook.com) einholen.
+## 8. License & Usage
+OPENCORE Analyzer is free for private individuals and developer testing. Cannabis Social Clubs (CSCs) and companies must contact <https://ottcouture.eu> to license commercial use. Feedback: otcdmin@outlook.com, Instagram @ottcouture.eu, Discord discord.gg/GMMSqePfPh.
