@@ -107,12 +107,14 @@ from opencore.settings_store import (
     bootstrap_app_settings,
     build_llm_settings_payload,
     delete_llm_profile,
+    get_faq_blocks,
     get_active_llm_profile_id,
     get_default_model_id,
     get_llm_config,
     get_llm_profiles,
     get_mqtt_config,
     normalize_llm_config,
+    persist_faq_blocks,
     persist_llm_config,
     persist_mqtt_config,
     reset_llm_config,
@@ -445,6 +447,17 @@ class MQTTConfigPayload(BaseModel):
     password: str = ""
     use_tls: bool = False
     sensors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class FAQBlockPayload(BaseModel):
+    id: Optional[str] = None
+    title: str = ""
+    blurb: str = ""
+    prompt: str = ""
+
+
+class FAQBlocksPayload(BaseModel):
+    blocks: List[FAQBlockPayload] = Field(default_factory=list)
 
 
 def get_effective_model_name(config: Dict[str, Any], fallback: str = GPT_MODEL) -> str:
@@ -2026,6 +2039,21 @@ async def poll_mqtt_values() -> JSONResponse:
 
     readings = poll_mqtt_topics(get_mqtt_config())
     return JSONResponse({"values": readings, "count": len(readings)})
+
+
+@app.get("/api/settings/faq", response_class=JSONResponse)
+async def fetch_faq_blocks_endpoint() -> JSONResponse:
+    """Expose the FAQ prompt blocks used by the prompt builder."""
+
+    return JSONResponse({"blocks": get_faq_blocks()})
+
+
+@app.post("/api/settings/faq", response_class=JSONResponse)
+async def persist_faq_blocks_endpoint(payload: FAQBlocksPayload) -> JSONResponse:
+    """Persist FAQ/prompt builder blocks server-side."""
+
+    blocks = persist_faq_blocks([block.dict() for block in payload.blocks])
+    return JSONResponse({"blocks": blocks, "message": "FAQ prompts saved."})
 
 
 @app.get("/network/status", response_class=JSONResponse)

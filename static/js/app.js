@@ -33,7 +33,7 @@ const PROMPT_TEMPLATES = [
   },
 ];
 
-const FAQ_BLOCKS = [
+const DEFAULT_FAQ_BLOCKS = [
   {
     id: "faq_full_health",
     title: "Full plant health",
@@ -156,6 +156,7 @@ const state = {
   mqttConfig: { broker: "", port: 1883, username: "", password: "", use_tls: false, sensors: [] },
   mqttValues: [],
   builderMode: "blocks",
+  faqBlocks: [...DEFAULT_FAQ_BLOCKS],
 };
 
 const dom = {};
@@ -168,6 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cacheDom();
   initTheme();
   initTemplates();
+  loadFaqBlocks();
   initPromptBuilder();
   bindEvents();
   loadModels();
@@ -311,6 +313,22 @@ function initTemplates() {
   renderCustomTemplateList();
 }
 
+async function loadFaqBlocks() {
+  // Start with defaults so the builder is usable even if the API fails.
+  state.faqBlocks = [...DEFAULT_FAQ_BLOCKS];
+  renderFaqBlocks();
+  try {
+    const response = await fetch("/api/settings/faq");
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok && Array.isArray(payload.blocks)) {
+      state.faqBlocks = payload.blocks.length ? payload.blocks : [...DEFAULT_FAQ_BLOCKS];
+      renderFaqBlocks();
+    }
+  } catch (error) {
+    console.warn("FAQ load failed", error);
+  }
+}
+
 function renderTemplateOptions() {
   if (!dom.templateSelect) return;
     dom.templateSelect.innerHTML = '<option value="">Select template …</option>';
@@ -378,7 +396,7 @@ function initPromptBuilder() {
 function renderFaqBlocks() {
   if (!dom.faqBlockList) return;
   dom.faqBlockList.innerHTML = "";
-  FAQ_BLOCKS.forEach((block) => {
+  state.faqBlocks.forEach((block) => {
     const tile = document.createElement("div");
     tile.className = "builder-block";
     tile.draggable = true;

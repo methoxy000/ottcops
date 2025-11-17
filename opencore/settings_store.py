@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import HTTPException
 
 from .config import (
+    DEFAULT_FAQ_BLOCKS,
     DEFAULT_LLM_CONFIG,
     LLM_ALLOWED_PROVIDERS,
     MQTT_DEFAULT_CONFIG,
@@ -121,6 +122,36 @@ def normalize_mqtt_config(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     return config
 
 
+def normalize_faq_block(entry: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Ensure FAQ blocks always have an id, title, blurb, and prompt."""
+
+    if not isinstance(entry, dict):
+        return None
+    prompt = (entry.get("prompt") or "").strip()
+    if not prompt:
+        return None
+    block_id = (entry.get("id") or uuid.uuid4().hex).strip()
+    title = (entry.get("title") or entry.get("label") or "FAQ").strip()
+    blurb = (entry.get("blurb") or entry.get("description") or "").strip()
+    return {"id": block_id, "title": title or block_id, "blurb": blurb, "prompt": prompt}
+
+
+def normalize_faq_blocks(raw: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    blocks: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    source = raw if isinstance(raw, list) and raw else DEFAULT_FAQ_BLOCKS
+    for entry in source:
+        normalized = normalize_faq_block(entry)
+        if not normalized:
+            continue
+        block_id = normalized["id"]
+        if block_id in seen:
+            normalized["id"] = uuid.uuid4().hex
+        seen.add(normalized["id"])
+        blocks.append(normalized)
+    return blocks
+
+
 def load_app_settings() -> Dict[str, Any]:
     defaults = {
         "default_model_id": None,
@@ -128,6 +159,7 @@ def load_app_settings() -> Dict[str, Any]:
         "llm_profiles": [],
         "active_llm_profile": None,
         "mqtt": MQTT_DEFAULT_CONFIG.copy(),
+        "faq_blocks": DEFAULT_FAQ_BLOCKS,
     }
     if SETTINGS_PATH.is_file():
         try:
@@ -137,6 +169,7 @@ def load_app_settings() -> Dict[str, Any]:
             defaults["llm_profiles"] = normalize_llm_profiles(data.get("llm_profiles"))
             defaults["active_llm_profile"] = data.get("active_llm_profile")
             defaults["mqtt"] = normalize_mqtt_config(data.get("mqtt"))
+            defaults["faq_blocks"] = normalize_faq_blocks(data.get("faq_blocks"))
             if defaults["active_llm_profile"] and not any(
                 p.get("id") == defaults["active_llm_profile"] for p in defaults["llm_profiles"]
             ):
@@ -267,5 +300,18 @@ def get_mqtt_config() -> Dict[str, Any]:
 def persist_mqtt_config(payload: Dict[str, Any]) -> Dict[str, Any]:
     normalized = normalize_mqtt_config(payload)
     _app_settings["mqtt"] = normalized
+    save_app_settings(_app_settings)
+    return normalized
+
+
+def get_faq_blocks() -> List[Dict[str, Any]]:
+    blocks = normalize_faq_blocks(_app_settings.get("faq_blocks"))
+    _app_settings["faq_blocks"] = blocks
+    return blocks
+
+
+def persist_faq_blocks(blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized = normalize_faq_blocks(blocks)
+    _app_settings["faq_blocks"] = normalized
     save_app_settings(_app_settings)
     return normalized

@@ -338,7 +338,21 @@
         </section>
 
         <section class="card">
-          <h2>3. Vision models with low resource needs</h2>
+          <h2>3. Prompt builder FAQ tiles</h2>
+          <p class="cta">
+            Manage the FAQ tiles that appear inside the analyzer prompt builder. Add or edit questions and save them server-side
+            so every operator sees the same drag-and-drop blocks.
+          </p>
+          <div id="faq-editor-list" class="grid two"></div>
+          <div class="actions" style="margin-top: 0.75rem; gap: 0.5rem">
+            <button class="secondary" id="faq-add" type="button">Add FAQ</button>
+            <button class="primary" id="faq-save" type="button">Save FAQ set</button>
+          </div>
+          <p id="faq-status" class="cta" style="display: none"></p>
+        </section>
+
+        <section class="card">
+          <h2>4. Vision models with low resource needs</h2>
           <ul class="models">
             <li>
               <strong>Phi-3.5 Vision Mini (~4.5 GB)</strong>
@@ -360,7 +374,7 @@
         </section>
 
         <section class="card">
-          <h2>4. Tips for Ollama &amp; LM Studio</h2>
+          <h2>5. Tips for Ollama &amp; LM Studio</h2>
           <div class="grid two">
             <div>
               <h3>Ollama</h3>
@@ -384,7 +398,7 @@
         </section>
 
         <section class="card" id="mqtt-card">
-          <h2>5. MQTT sensors</h2>
+          <h2>6. MQTT sensors</h2>
           <p>
             Connect greenhouse sensors via MQTT (CO₂, PPFD/LUX, humidity, temperature, EC, pH). Values can be dragged into prompts on
             the analyzer to ground LLM answers in live telemetry.
@@ -423,7 +437,7 @@
         </section>
 
         <section class="card" id="tm-depot">
-          <h2>6. OTTCOUTURE Teachable Machine depot</h2>
+          <h2>7. OTTCOUTURE Teachable Machine depot</h2>
           <p>
             Upload a ZIP (TFJS with <code>metadata.json</code>/<code>model.json</code>/<code>weights.bin</code> or Keras with
             <code>keras_model.h5</code> + <code>labels.txt</code>), choose the type, and we pin the bundle under <code>/TM-models</code>.
@@ -469,7 +483,7 @@
         </section>
 
         <section class="card" id="network-card">
-          <h2>6. WiFi broadcast &amp; ottcolab.local</h2>
+          <h2>8. WiFi broadcast &amp; ottcolab.local</h2>
           <p>
             To let every device on the same WiFi reach <code>ottcolab.local</code>, we announce a hostname via mDNS. This mode is
             fully owned by <strong>ottcouture.eu</strong>; send feedback to otcdmin@outlook.com or
@@ -499,7 +513,7 @@
         </section>
 
         <section class="card">
-          <h2>7. Save settings</h2>
+          <h2>9. Save settings</h2>
           <p>
             Provider settings persist locally (<code>localStorage.cannabisLLMConfig</code>) and server-side via
             <code>/api/settings/llm</code>. Multiple profiles can be created here and selected in the analyzer/OTTO.
@@ -582,6 +596,69 @@
           },
         ];
 
+      const DEFAULT_FAQ_BLOCKS = [
+        {
+          id: "faq_full_health",
+          title: "Full plant health",
+          blurb: "Overall vigor, leaf color, deficiencies, stress.",
+          prompt:
+            "Provide a concise health assessment: vigor, leaf color, nutrient deficiency signs, stress markers, and any remedial actions.",
+        },
+        {
+          id: "faq_environment",
+          title: "Environment & sensors",
+          blurb: "Blend sensor data with visible cues.",
+          prompt:
+            "Use the provided environment readings inside the prompt (humidity, temperature, CO2/PPFD, EC/PH) to contextualize what you see in the image. Flag mismatches between visuals and sensor values.",
+        },
+        {
+          id: "faq_pests",
+          title: "Pest sweep",
+          blurb: "Check for pests and typical damage patterns.",
+          prompt: "Scan for pests or pest damage. Name likely culprits and list next steps to contain them.",
+        },
+        {
+          id: "faq_trichomes",
+          title: "Trichome timing",
+          blurb: "Harvest window via trichome mix.",
+          prompt: "Describe trichome mix (clear/milky/amber) and estimate a harvest window.",
+        },
+        {
+          id: "faq_cleanliness",
+          title: "Cleanliness check",
+          blurb: "Mold risk, bud handling, wash suggestions.",
+          prompt: "Check for mold/rot risk, handling artifacts, and recommend any bud wash or drying adjustments.",
+        },
+        {
+          id: "faq_vpd",
+          title: "VPD & climate",
+          blurb: "Target humidity/temperature and VPD alignment.",
+          prompt:
+            "Review vapor pressure deficit alignment using the provided humidity and temperature. Flag if VPD is out of range for the current growth stage and suggest humidity or temperature tweaks to get back on track.",
+        },
+        {
+          id: "faq_ripeness",
+          title: "Ripeness check",
+          blurb: "Flower maturity and fade cues.",
+          prompt:
+            "Assess flower ripeness and fade cues beyond trichomes: pistil color, leaf fade patterns, bud density, and any late-stage stress. Provide a harvest readiness note.",
+        },
+        {
+          id: "faq_training",
+          title: "Canopy & training",
+          blurb: "Node spacing, airflow, light spread.",
+          prompt:
+            "Evaluate canopy shape, node spacing, airflow lanes, and light distribution. Recommend low-stress training, defoliation, or trellising actions to optimize coverage without stressing the plant.",
+        },
+        {
+          id: "faq_feeding",
+          title: "Feeding & EC/PH",
+          blurb: "Nutrient strength and pH context.",
+          prompt:
+            "Use the EC and pH readings (if provided) together with visible leaf cues to decide if feeding strength is appropriate. Flag over/underfeeding signs and suggest small EC or pH adjustments.",
+        },
+      ];
+
       const providerGroup = document.getElementById("provider-group");
       const providerProfileName = document.getElementById("provider-profile-name");
       const providerSaveBtn = document.getElementById("provider-save-btn");
@@ -629,6 +706,10 @@
       const mqttSaveBtn = document.getElementById("mqtt-save");
       const mqttPollBtn = document.getElementById("mqtt-poll");
       const mqttStatus = document.getElementById("mqtt-status");
+      const faqEditorList = document.getElementById("faq-editor-list");
+      const faqAddBtn = document.getElementById("faq-add");
+      const faqSaveBtn = document.getElementById("faq-save");
+      const faqStatus = document.getElementById("faq-status");
 
       let llmProfiles = [];
       let activeProfileId = null;
@@ -636,6 +717,7 @@
       let lastServerConfig = null;
       let mqttConfig = { broker: "", port: 1883, username: "", password: "", use_tls: false, sensors: [] };
       let mqttKinds = ["co2", "ppfd", "lux", "humidity", "temperature", "ec", "ph"];
+      let faqBlocks = [];
 
       function setActiveProvider(value) {
         providerGroup.querySelectorAll(".provider").forEach((el) => {
@@ -930,6 +1012,106 @@
         mqttStatus.style.display = "block";
         mqttStatus.textContent = message;
         mqttStatus.style.color = isError ? "#ff9f9f" : "#c7ffe2";
+      }
+
+      function setFaqStatus(message, isError = false) {
+        if (!faqStatus) return;
+        faqStatus.style.display = "block";
+        faqStatus.textContent = message;
+        faqStatus.style.color = isError ? "#ffb3b3" : "#c7ffe2";
+      }
+
+      function renderFaqEditor() {
+        if (!faqEditorList) return;
+        faqEditorList.innerHTML = "";
+        if (!faqBlocks.length) {
+          const empty = document.createElement("p");
+          empty.textContent = "No FAQ tiles yet. Add one to feed the prompt builder.";
+          faqEditorList.appendChild(empty);
+          return;
+        }
+        faqBlocks.forEach((block, idx) => {
+          const wrapper = document.createElement("div");
+          wrapper.style.padding = "1rem";
+          wrapper.style.border = "1px solid rgba(255,255,255,0.12)";
+          wrapper.style.borderRadius = "16px";
+          wrapper.innerHTML = `
+            <label><span>Title</span><input data-idx="${idx}" data-field="title" type="text" value="${
+              block.title || ""
+            }" /></label>
+            <label><span>Blurb</span><input data-idx="${idx}" data-field="blurb" type="text" value="${
+              block.blurb || ""
+            }" /></label>
+            <label><span>Prompt text</span><textarea data-idx="${idx}" data-field="prompt">${
+              block.prompt || ""
+            }</textarea></label>
+            <button type="button" data-action="remove" data-idx="${idx}" style="margin-top:0.35rem">Remove</button>
+          `;
+          wrapper.querySelectorAll("input, textarea").forEach((el) => {
+            el.addEventListener("input", (event) => {
+              const field = event.target.dataset.field;
+              faqBlocks[idx][field] = event.target.value;
+            });
+          });
+          const removeBtn = wrapper.querySelector("button[data-action='remove']");
+          removeBtn.addEventListener("click", () => {
+            faqBlocks.splice(idx, 1);
+            renderFaqEditor();
+          });
+          faqEditorList.appendChild(wrapper);
+        });
+      }
+
+      function addFaqBlock() {
+        faqBlocks.push({ title: "", blurb: "", prompt: "" });
+        renderFaqEditor();
+      }
+
+      async function loadFaqConfig() {
+        faqBlocks = [...DEFAULT_FAQ_BLOCKS];
+        renderFaqEditor();
+        setFaqStatus("Loading FAQ tiles …");
+        try {
+          const response = await fetch("/api/settings/faq");
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.detail || "FAQ could not be loaded");
+          const blocks = Array.isArray(payload.blocks) && payload.blocks.length ? payload.blocks : DEFAULT_FAQ_BLOCKS;
+          faqBlocks = blocks;
+          renderFaqEditor();
+          setFaqStatus("FAQ tiles loaded.");
+        } catch (error) {
+          setFaqStatus(error.message || "FAQ load failed. Using defaults.", true);
+        }
+      }
+
+      async function saveFaqConfig() {
+        const cleaned = faqBlocks
+          .map((block) => ({
+            id: block.id || undefined,
+            title: (block.title || "FAQ").trim(),
+            blurb: (block.blurb || "").trim(),
+            prompt: (block.prompt || "").trim(),
+          }))
+          .filter((block) => block.prompt);
+        if (!cleaned.length) {
+          setFaqStatus("Add at least one prompt before saving.", true);
+          return;
+        }
+        setFaqStatus("Saving FAQ tiles …");
+        try {
+          const response = await fetch("/api/settings/faq", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ blocks: cleaned }),
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.detail || "Server rejected FAQ tiles");
+          faqBlocks = payload.blocks || cleaned;
+          renderFaqEditor();
+          setFaqStatus(payload.message || "FAQ prompts saved.");
+        } catch (error) {
+          setFaqStatus(error.message || "FAQ could not be saved.", true);
+        }
       }
 
       function renderMqttSensors() {
@@ -1355,9 +1537,15 @@
       if (mqttAddSensor) mqttAddSensor.addEventListener("click", addMqttSensor);
       if (mqttSaveBtn) mqttSaveBtn.addEventListener("click", persistMqttConfig);
       if (mqttPollBtn) mqttPollBtn.addEventListener("click", pollMqtt);
+      if (faqAddBtn) faqAddBtn.addEventListener("click", () => {
+        addFaqBlock();
+        setFaqStatus("Fill in the FAQ tiles and save them.");
+      });
+      if (faqSaveBtn) faqSaveBtn.addEventListener("click", saveFaqConfig);
 
       bootstrapLlmConfig();
       bootstrapMqttConfig();
+      loadFaqConfig();
 
       if (tmUploadBtn) {
         tmUploadBtn.addEventListener("click", uploadTmModel);

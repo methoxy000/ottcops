@@ -81,3 +81,61 @@ MQTT_DEFAULT_CONFIG: Dict[str, object] = {
     "sensors": [],
 }
 MQTT_SENSOR_KINDS = {"co2", "ppfd", "lux", "humidity", "temperature", "ec", "ph"}
+
+# Default FAQ blocks for the prompt builder. These can be overridden via the config UI.
+DEFAULT_FAQ_BLOCKS = [
+    {
+        "id": "faq_full_health",
+        "title": "Full plant health",
+        "blurb": "Overall vigor, leaf color, deficiencies, stress.",
+        "prompt": "Provide a concise health assessment: vigor, leaf color, nutrient deficiency signs, stress markers, and any remedial actions.",
+    },
+    {
+        "id": "faq_environment",
+        "title": "Environment & sensors",
+        "blurb": "Blend sensor data with visible cues.",
+        "prompt": "Use the provided environment readings inside the prompt (humidity, temperature, CO2/PPFD, EC/PH) to contextualize what you see in the image. Flag mismatches between visuals and sensor values.",
+    },
+    {
+        "id": "faq_pests",
+        "title": "Pest sweep",
+        "blurb": "Check for pests and typical damage patterns.",
+        "prompt": "Scan for pests or pest damage. Name likely culprits and list next steps to contain them.",
+    },
+    {
+        "id": "faq_trichomes",
+        "title": "Trichome timing",
+        "blurb": "Harvest window via trichome mix.",
+        "prompt": "Describe trichome mix (clear/milky/amber) and estimate a harvest window.",
+    },
+    {
+        "id": "faq_cleanliness",
+        "title": "Cleanliness check",
+        "blurb": "Mold risk, bud handling, wash suggestions.",
+        "prompt": "Check for mold/rot risk, handling artifacts, and recommend any bud wash or drying adjustments.",
+    },
+    {
+        "id": "faq_vpd",
+        "title": "VPD & climate",
+        "blurb": "Target humidity/temperature and VPD alignment.",
+        "prompt": "Review vapor pressure deficit alignment using the provided humidity and temperature. Flag if VPD is out of range for the current growth stage and suggest humidity or temperature tweaks to get back on track.",
+    },
+    {
+        "id": "faq_ripeness",
+        "title": "Ripeness check",
+        "blurb": "Flower maturity and fade cues.",
+        "prompt": "Assess flower ripeness and fade cues beyond trichomes: pistil color, leaf fade patterns, bud density, and any late-stage stress. Provide a harvest readiness note.",
+    },
+    {
+        "id": "faq_training",
+        "title": "Canopy & training",
+        "blurb": "Node spacing, airflow, light spread.",
+        "prompt": "Evaluate canopy shape, node spacing, airflow lanes, and light distribution. Recommend low-stress training, defoliation, or trellising actions to optimize coverage without stressing the plant.",
+    },
+    {
+        "id": "faq_feeding",
+        "title": "Feeding & EC/PH",
+        "blurb": "Nutrient strength and pH context.",
+        "prompt": "Use the EC and pH readings (if provided) together with visible leaf cues to decide if feeding strength is appropriate. Flag over/underfeeding signs and suggest small EC or pH adjustments.",
+    },
+]
